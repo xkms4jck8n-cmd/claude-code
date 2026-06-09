@@ -2441,7 +2441,7 @@ function JigsawPuzzle({ puzzle, accent, solved, onSolve, onWrong }) {
     const next = order.slice();
     [next[sel], next[pos]] = [next[pos], next[sel]];
     setSel(null); setOrder(next);
-    if (next.every((v, i) => v === i)) { setDone(true); SFX.clue(); const pt = escCenter(ev); setTimeout(() => onSolve(pt), 280); }
+    if (next.every((v, i) => v === i)) { setDone(true); SFX.clue(); onSolve(escCenter(ev)); }
   };
 
   return (
@@ -2481,7 +2481,7 @@ function CipherPuzzle({ puzzle, accent, solved, onSolve, onWrong }) {
     const next = [...built, ch];
     setBuilt(next);
     if (next.length === ans.length) {
-      if (next.join("") === ans) { setDone(true); SFX.clue(); const pt = escCenter(ev); setTimeout(() => onSolve(pt), 220); }
+      if (next.join("") === ans) { setDone(true); SFX.clue(); onSolve(escCenter(ev)); }
       else { onWrong(); setTimeout(() => setBuilt([]), 480); }
     }
   };
@@ -2528,7 +2528,7 @@ function PatternPuzzle({ puzzle, accent, solved, onSolve, onWrong }) {
       SFX.tick();
       const next = [...built, sym];
       setBuilt(next);
-      if (next.length === ans.length) { setDone(true); SFX.clue(); const pt = escCenter(ev); setTimeout(() => onSolve(pt), 220); }
+      if (next.length === ans.length) { setDone(true); SFX.clue(); onSolve(escCenter(ev)); }
     } else { onWrong(); setBuilt([]); }
   };
 
@@ -2561,7 +2561,7 @@ function SpatialPuzzle({ puzzle, accent, solved, onSolve, onWrong }) {
     if (locked) return;
     SFX.spin();
     const next = rots.slice(); next[i] = (next[i] + 90) % 360; setRots(next);
-    if (next.every((r) => r % 360 === 0)) { setDone(true); SFX.clue(); const pt = escCenter(ev); setTimeout(() => onSolve(pt), 240); }
+    if (next.every((r) => r % 360 === 0)) { setDone(true); SFX.clue(); onSolve(escCenter(ev)); }
   };
 
   return (
@@ -2713,7 +2713,7 @@ function MatchPuzzle({ puzzle, accent, solved, onSolve, onWrong }) {
     if (locked) return;
     SFX.tap();
     const next = cur.slice(); next[i] = (next[i] + 1) % palette.length; setCur(next);
-    if (next.every((c, k) => c === targets[k])) { setDone(true); SFX.clue(); const pt = escCenter(ev); setTimeout(() => onSolve(pt), 240); }
+    if (next.every((c, k) => c === targets[k])) { setDone(true); SFX.clue(); onSolve(escCenter(ev)); }
   };
 
   return (
