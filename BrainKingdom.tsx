@@ -112,6 +112,10 @@ const I = {
   refresh: ["M3 12a9 9 0 0 1 15-6.7L21 8", "M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16", "M3 21v-5h5"],
   key: ["M14 7a4 4 0 1 0 0 8 4 4 0 0 0 0-8z", "M11 11 3 19l2 2M7 15l2 2"],
   film: ["M4 4h16v16H4z", "M8 4v16M16 4v16M4 8h4M4 12h4M4 16h4M16 8h4M16 12h4M16 16h4"],
+  door: ["M6 21V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v17", "M4 21h16", "M14 12h.01"],
+  puzzle: ["M10 4h4a1 1 0 0 1 1 1v1.5a1.5 1.5 0 1 0 3 0V5h2a1 1 0 0 1 1 1v3.5a1.5 1.5 0 1 1 0 3V18a1 1 0 0 1-1 1h-4v-1.5a1.5 1.5 0 1 0-3 0V19H6a1 1 0 0 1-1-1v-4H3.5a1.5 1.5 0 1 1 0-3H5V5a1 1 0 0 1 1-1h4z"],
+  bag: ["M6 8h12l1 12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1z", "M9 8V6a3 3 0 0 1 6 0v2"],
+  unlock: ["M6 11h12v9H6z", "M9 11V8a3 3 0 0 1 5.6-1.5"],
 };
 
 // ============ AUDIO (volume-aware) ============
@@ -176,7 +180,7 @@ const DEFAULT_SETTINGS = {
 
 const MODES = [
   { id: "classic", name: "الكلاسيكي", desc: "أجب عن الأسئلة وتقدّم في مستويات المملكة", icon: "book", color: C.gold, n: 8, time: 0, cta: "ابدأ اللعب", needsCat: true },
-  { id: "timed", name: "الوقت المحدود", desc: "أجب أكبر عدد ممكن من الأسئلة في الوقت المحدد", icon: "hourglass", color: C.amber, n: 14, time: 12, cta: "ابدأ اللعب" },
+  { id: "timed", name: "الوقت المحدود", desc: "10 أسئلة · تبدأ بـ20 ثانية — كل صحيحة +2ث وكل خطأ −5ث، والكومبو يضاعف مكافأتك", icon: "hourglass", color: C.amber, n: 10, time: 20, cta: "ابدأ اللعب" },
   { id: "challenge", name: "طور التحدي", desc: "تحدَّ أصدقاءك في معركة معرفة حقيقية", icon: "versus", color: C.rose, n: 6, time: 0, cta: "ابدأ التحدي", badge: "متعدد" },
   { id: "rapid", name: "سريع ومكثّف", desc: "جولات سريعة لتحدي سرعتك ومعرفتك", icon: "brain", color: C.cyan, n: 12, time: 6, cta: "ابدأ اللعب" },
   { id: "builder", name: "تركيب الكلمة", desc: "كوّن الكلمة الصحيحة من الحروف المتاحة", icon: "blocks", color: C.gold, n: 7, time: 0, cta: "ابدأ اللعب", needsCat: true },
@@ -184,6 +188,7 @@ const MODES = [
   { id: "detective", name: "المحقق", desc: "اجمع الأدلة بالإجابات الصحيحة وحلّ اللغز النهائي", icon: "fingerprint", color: "#c99bf5", n: 5, time: 0, cta: "ابدأ القضية", badge: "جديد", special: true },
   { id: "tower", name: "برج المعرفة", desc: "تسلّق طوابق لا نهائية — كل طابق أصعب، وزعيم كل 10 طوابق", icon: "tower", color: "#7bd6ef", n: 0, time: 0, cta: "ابدأ التسلّق", badge: "جديد", special: true },
   { id: "roulette", name: "عجلة الفئات", desc: "أدر العجلة لفئة عشوائية ومعدّلات ومضاعفات مفاجئة", icon: "wheel", color: "#f0b15a", n: 8, time: 8, cta: "أدر العجلة", badge: "جديد", special: true },
+  { id: "escape", name: "غرفة الهروب", desc: "اختر غرفة، وحلّ 5 ألغاز متسلسلة — كل لغز يمنحك أداةً تفتح الذي يليه حتى الهروب", icon: "door", color: "#6fe0b0", n: 5, time: 0, cta: "ادخل الغرف", badge: "جديد", special: true },
 ];
 const modeById = (id) => MODES.find((m) => m.id === id);
 
@@ -208,10 +213,11 @@ const ACHIEVEMENTS = [
   { id: "a_detective", name: "المحقّق البارع", desc: "حلّ أول قضية", icon: "fingerprint", c: "#c99bf5", goal: 1, stat: "casesSolved" },
   { id: "a_floor20", name: "متسلّق ماهر", desc: "ابلغ الطابق 20 في البرج", icon: "tree", c: C.green, goal: 20, stat: "towerBest" },
   { id: "a_acc90", name: "دقّة عالية", desc: "حافظ على دقّة 90%+", icon: "target", c: C.amber, goal: 90, stat: "accPct" },
+  { id: "a_escape", name: "سيّد الهروب", desc: "اهرب من أول غرفة", icon: "door", c: "#6fe0b0", goal: 1, stat: "roomsEscaped" },
 ];
 const achProgress = (a, p) => {
   const s = p.stats;
-  const v = { rounds: s.rounds, answered: s.answered, perfects: s.perfects, streak: p.streak, level: p.level, bossWins: s.bossWins || 0, casesSolved: s.casesSolved || 0, towerBest: s.towerBest || 0, accPct: s.answered ? Math.round((s.right / s.answered) * 100) : 0 }[a.stat] || 0;
+  const v = { rounds: s.rounds, answered: s.answered, perfects: s.perfects, streak: p.streak, level: p.level, bossWins: s.bossWins || 0, casesSolved: s.casesSolved || 0, towerBest: s.towerBest || 0, roomsEscaped: s.roomsEscaped || 0, accPct: s.answered ? Math.round((s.right / s.answered) * 100) : 0 }[a.stat] || 0;
   return { v, pct: Math.min(100, (v / a.goal) * 100), done: v >= a.goal };
 };
 
@@ -337,7 +343,7 @@ export default function Kingdom() {
     streak: 12, seasonXp: 1200, seasonTier: 8, answeredTotal: 5842,
     seen: new Set(), history: [], unlockedAch: new Set(["a_first", "a_q100"]),
     inventory: new Set(),
-    stats: { rounds: 184, answered: 5842, right: 5667, perfects: 12, best: 0.97, bossWins: 0, casesSolved: 0, towerBest: 0, rank: 3450, catPlayed: {}, mastery: {}, achGot: 2 },
+    stats: { rounds: 184, answered: 5842, right: 5667, perfects: 12, best: 0.97, bossWins: 0, casesSolved: 0, towerBest: 0, roomsEscaped: 0, rank: 3450, catPlayed: {}, mastery: {}, achGot: 2 },
     daily: { date: todaySeed(), missions: { roundsToday: 0, rightToday: 0, perfectsToday: 0 }, claimedM: new Set() },
   });
   const update = useCallback((fn) => setP((prev) => { const n = { ...prev }; fn(n); return n; }), []);
@@ -365,6 +371,7 @@ export default function Kingdom() {
     if (m.id === "detective") { setMode({ ...m, _cat: c, _diff: diff }); setCat(c || null); setScreen("detective"); return; }
     if (m.id === "tower") { setMode({ ...m, _diff: diff }); setScreen("tower"); return; }
     if (m.id === "roulette") { setMode({ ...m, _diff: diff }); setScreen("roulette"); return; }
+    if (m.id === "escape") { setMode({ ...m, _diff: diff }); setScreen("escape"); return; }
     const pool = c ? catPool(c.id) : ALL_Q;
     const tier = diff.tier;
     let data;
@@ -379,7 +386,7 @@ export default function Kingdom() {
   };
 
   const grantRewards = (rightCount, totalCount, modeId, extra = {}) => {
-    const tierMul = playerTier; const modeBonus = { rapid: 1.3, timed: 1.2, challenge: 1, choose: 1.25, builder: 1.4, detective: 1.5, tower: 1.5, roulette: 1.3 }[modeId] || 1;
+    const tierMul = playerTier; const modeBonus = { rapid: 1.3, timed: 1.2, challenge: 1, choose: 1.25, builder: 1.4, detective: 1.5, tower: 1.5, roulette: 1.3, escape: 1.5 }[modeId] || 1;
     const rmul = (extra.scoreMul || 1) * diff.rewardMul;
     const gXp = Math.round(rightCount * (10 + tierMul * 3) * modeBonus * diff.xpMul * (extra.scoreMul || 1));
     const perfect = rightCount === totalCount && totalCount > 0;
@@ -394,6 +401,7 @@ export default function Kingdom() {
       if (perfect) n.stats.perfects++;
       if (extra.bossWin) n.stats.bossWins = (n.stats.bossWins || 0) + 1;
       if (extra.caseSolved) n.stats.casesSolved = (n.stats.casesSolved || 0) + 1;
+      if (extra.roomEscaped) n.stats.roomsEscaped = (n.stats.roomsEscaped || 0) + 1;
       if (extra.towerFloor) n.stats.towerBest = Math.max(n.stats.towerBest || 0, extra.towerFloor);
       const c = mode?._cat?.id || cat?.id; if (c) n.stats.mastery = { ...n.stats.mastery, [c]: (n.stats.mastery[c] || 0) + rightCount };
       n.daily = { ...n.daily, missions: { roundsToday: n.daily.missions.roundsToday + 1, rightToday: n.daily.missions.rightToday + rightCount, perfectsToday: n.daily.missions.perfectsToday + (perfect ? 1 : 0) } };
@@ -433,6 +441,7 @@ export default function Kingdom() {
           {screen === "detective" && <DetectivePlay {...{ mode, p, diff, finishRound, markSeen, setScreen: go, addBurst }} />}
           {screen === "tower" && <TowerPlay {...{ mode, p, diff, grantRewards, markSeen, setScreen: go, addBurst, showToast }} />}
           {screen === "roulette" && <RoulettePlay {...{ mode, p, diff, begin, finishRound, markSeen, setScreen: go, addBurst }} />}
+          {screen === "escape" && <EscapeRoomPlay {...{ mode, p, diff, finishRound, markSeen, setScreen: go, addBurst, showToast }} />}
           {screen === "result" && result && <Result {...{ result, setScreen: go, begin }} />}
           {screen === "categories" && <CatScreen {...{ setScreen: go, begin }} />}
           {screen === "modes" && <ModeScreen {...{ setScreen: go, begin }} />}
@@ -638,6 +647,7 @@ function Play({ mode, cat, round, qi, setQi, p, playerTier, finishRound, addBurs
   const accent = mode._cat?.color || mode.color || C.gold;
   if (mode.id === "builder") return <BuilderPlay {...{ mode, round, qi, setQi, accent, finishRound, markSeen, setScreen }} />;
   if (mode.id === "choose") return <ChoosePlay {...{ mode, round, qi, setQi, accent, finishRound, addBurst, markSeen, setScreen }} />;
+  if (mode.id === "timed") return <TimedPlay {...{ mode, round, qi, setQi, accent, finishRound, addBurst, markSeen, setScreen }} />;
   return <StandardPlay {...{ mode, cat, round, qi, setQi, accent, p, finishRound, addBurst, markSeen, setScreen }} />;
 }
 
@@ -701,6 +711,163 @@ function StandardPlay({ mode, round, qi, setQi, accent, finishRound, addBurst, m
           })}
         </div>
         <Helpers {...{ picked, hidden, hint, onFifty: () => { if (picked !== null || hidden.length) return; SFX.tap(); const w = opts.map((o, i) => i).filter(i => opts[i] !== cur.a); setHidden(shuffle(w).slice(0, 2)); }, onHint: () => { if (hint) return; SFX.tap(); setHint(true); }, onSkip: () => { if (picked !== null) return; SFX.tap(); markSeen(cur.id, false); if (qi + 1 >= round.length) finishRound(right, round.length); else setQi(qi + 1); } }} />
+      </div>
+    </div>
+  );
+}
+
+// ============ MODE: TIMED (الوقت المحدود) — single 10-question race against a shared timer ============
+// Rules: 10 questions per match · starts at 20s · +2s per correct · −5s per wrong (instant) ·
+// hitting 0s = immediate Game Over · combo system tracks consecutive correct answers.
+function TimedPlay({ mode, round, qi, setQi, accent, finishRound, addBurst, markSeen, setScreen }) {
+  const START_MS = 20000, ADD_MS = 2000, PEN_MS = 5000; // 20s start, +2s correct, −5s wrong
+  const cur = round[qi];
+  const [opts, setOpts] = useState(() => shuffle(cur.opts));
+  const [picked, setPicked] = useState(null);
+  const [right, setRight] = useState(0);
+  const [streak, setStreak] = useState(0);   // current combo (consecutive correct)
+  const [bestCombo, setBestCombo] = useState(0);
+  const [timeMs, setTimeMs] = useState(START_MS);
+  const [over, setOver] = useState(false);
+  const [won, setWon] = useState(false);
+  const [delta, setDelta] = useState(null);   // floating ±time popup
+  const [comboFx, setComboFx] = useState(0);   // key to retrigger the combo pop animation
+  const timeRef = useRef(START_MS);            // authoritative remaining time (ms)
+  const lastRef = useRef(0);
+  const tickSecRef = useRef(Math.ceil(START_MS / 1000));
+  const rightRef = useRef(0);
+  const bestRef = useRef(0);
+  const overRef = useRef(false);
+  const lockRef = useRef(false);
+  const rafRef = useRef(0);
+
+  // new question — keep the shared match timer running, only reset the card
+  useEffect(() => { setOpts(shuffle(cur.opts)); setPicked(null); lockRef.current = false; }, [qi]);
+
+  // smooth real-time countdown via rAF (paused during the answer reveal and after game over)
+  useEffect(() => {
+    if (over || picked !== null) return;
+    lastRef.current = performance.now();
+    const loop = (now) => {
+      const dt = now - lastRef.current; lastRef.current = now;
+      timeRef.current = Math.max(0, timeRef.current - dt);
+      setTimeMs(timeRef.current);
+      const sec = Math.ceil(timeRef.current / 1000);
+      if (sec !== tickSecRef.current) { tickSecRef.current = sec; if (sec > 0 && sec <= 5) SFX.tick(); }
+      if (timeRef.current <= 0) { endGame(false); return; }    // immediate Game Over at zero
+      rafRef.current = requestAnimationFrame(loop);
+    };
+    rafRef.current = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [over, picked]);
+
+  const endGame = (win) => {
+    if (overRef.current) return; overRef.current = true;
+    cancelAnimationFrame(rafRef.current);
+    setWon(win); setOver(true);
+    win ? SFX.win() : SFX.wrong();
+  };
+
+  const showDelta = (txt, color) => {
+    const id = Date.now() + Math.random(); setDelta({ id, txt, color });
+    setTimeout(() => setDelta(d => (d && d.id === id ? null : d)), 1000);
+  };
+
+  const answer = (idx, ev) => {
+    if (lockRef.current || over) return; lockRef.current = true;
+    setPicked(idx);
+    const ok = idx >= 0 && opts[idx] === cur.a;
+    markSeen(cur.id, ok);
+    if (ok) {
+      SFX.correct();
+      timeRef.current = timeRef.current + ADD_MS;            // +2s, instantly
+      rightRef.current += 1; setRight(rightRef.current);
+      const ns = streak + 1; setStreak(ns);                  // grow combo
+      if (ns > bestRef.current) { bestRef.current = ns; setBestCombo(ns); }
+      setComboFx(k => k + 1);
+      if (ns >= 3 && ns % 3 === 0) SFX.reward();              // combo milestone flourish
+      addBurst(ev, accent);
+      showDelta(`+${ADD_MS / 1000}ث`, C.green);
+    } else {
+      SFX.wrong();
+      timeRef.current = Math.max(0, timeRef.current - PEN_MS); // −5s, instantly
+      setStreak(0);                                           // combo broken
+      showDelta(`−${PEN_MS / 1000}ث`, C.red);
+    }
+    setTimeMs(timeRef.current);
+    setTimeout(() => {
+      if (overRef.current) return;
+      if (timeRef.current <= 0) { endGame(false); return; }   // ran out on a wrong answer
+      if (qi + 1 >= round.length) { endGame(true); return; }  // survived all 10
+      setQi(qi + 1);
+    }, 900);
+  };
+
+  const goResult = () => {
+    const scoreMul = 1 + Math.floor(bestRef.current / 3) * 0.5; // combo boosts final rewards
+    finishRound(rightRef.current, round.length, { scoreMul, headline: won ? "أكملت سباق الوقت!" : "انتهى الوقت!" });
+  };
+
+  if (over) {
+    const vc = won ? C.gold : C.red;
+    return (
+      <div className="k-fade" style={{ padding: 22, display: "flex", flexDirection: "column", justifyContent: "center", minHeight: "100vh", textAlign: "center" }}>
+        <div className="k-pop" style={{ display: "grid", placeItems: "center", width: 96, height: 96, borderRadius: 28, margin: "0 auto", background: `radial-gradient(circle,${vc}22,transparent)`, border: `1px solid ${vc}55` }}><Icon d={won ? I.trophy : I.hourglass} size={50} c={vc} /></div>
+        <h2 style={{ fontSize: 28, fontWeight: 900, margin: "14px 0 4px", color: vc }}>{won ? "أكملت التحدي!" : "انتهى الوقت!"}</h2>
+        <div style={{ color: C.inkDim, fontSize: 15 }}>{rightRef.current} من {round.length} إجابة صحيحة</div>
+        <Panel style={{ marginTop: 18, display: "flex", justifyContent: "space-around", padding: 18 }}>
+          <div className="k-rise"><Icon d={I.check} size={22} c={C.green} /><div style={{ fontSize: 21, fontWeight: 900, color: C.green, marginTop: 4 }}>{rightRef.current}</div><div style={{ fontSize: 11, color: C.inkDim }}>صحيحة</div></div>
+          <div className="k-rise"><Icon d={I.flame} size={22} c={C.amber} /><div style={{ fontSize: 21, fontWeight: 900, color: C.amber, marginTop: 4 }}>×{bestRef.current}</div><div style={{ fontSize: 11, color: C.inkDim }}>أعلى كومبو</div></div>
+        </Panel>
+        <GoldBtn onClick={() => { SFX.nav(); goResult(); }} style={{ marginTop: 20, padding: "14px" }}>عرض النتيجة والمكافآت</GoldBtn>
+        <DarkBtn onClick={() => setScreen("hub")} style={{ marginTop: 10 }}>الرئيسية</DarkBtn>
+      </div>
+    );
+  }
+
+  const secs = Math.ceil(timeMs / 1000);
+  const low = timeMs <= 5000;
+  const barPct = Math.max(0, Math.min(100, (timeMs / START_MS) * 100));
+  const comboMul = (1 + Math.floor(streak / 3) * 0.5).toFixed(1);
+
+  return (
+    <div className="k-fade">
+      <PlayHeader {...{ accent, mode, qi, total: round.length, setScreen, streak }} />
+      <div style={{ padding: "0 16px" }}>
+        {/* live shared timer */}
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 6 }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: C.inkDim }}><Icon d={I.hourglass} size={15} c={low ? C.red : accent} />الوقت المتبقّي</span>
+            <span style={{ position: "relative", display: "inline-flex", alignItems: "baseline", gap: 3, fontSize: 30, fontWeight: 900, lineHeight: 1, color: low ? C.red : C.ink, transition: "color .2s", textShadow: low ? `0 0 14px ${C.red}88` : "none", fontVariantNumeric: "tabular-nums" }}>
+              {secs}<span style={{ fontSize: 13, fontWeight: 800, color: C.inkDim }}>ث</span>
+              {delta && <span key={delta.id} className="k-delta" style={{ left: "50%", top: -10, transform: "translateX(-50%)", fontSize: 17, fontWeight: 900, color: delta.color, whiteSpace: "nowrap", textShadow: `0 0 10px ${delta.color}66` }}>{delta.txt}</span>}
+            </span>
+          </div>
+          <div className={low ? "k-shake-bar" : ""} style={{ height: 12, borderRadius: 7, background: "rgba(150,170,220,0.12)", overflow: "hidden", border: `1px solid ${low ? C.red + "55" : "transparent"}` }}>
+            <div style={{ height: "100%", width: `${barPct}%`, borderRadius: 7, background: low ? `linear-gradient(90deg,${C.red},${C.rose})` : `linear-gradient(90deg,${accent},${C.gold})`, boxShadow: `0 0 14px ${low ? C.red : accent}`, transition: picked !== null ? "width .25s cubic-bezier(.2,.9,.2,1)" : "none" }} />
+          </div>
+        </div>
+
+        {/* combo bonus banner */}
+        {streak >= 2 && (
+          <div key={comboFx} className="k-combo" style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "6px 16px", borderRadius: 999, background: `linear-gradient(120deg,${C.amber}22,${C.gold}11)`, border: `1px solid ${C.amber}66`, color: C.amber, fontWeight: 900, fontSize: 14, boxShadow: `0 0 18px ${C.amber}33` }}>
+              <Icon d={I.flame} size={16} c={C.amber} fill={C.amber} />كومبو ×{streak}{streak >= 3 ? ` · مكافأة ×${comboMul}` : ""}
+            </span>
+          </div>
+        )}
+
+        <Panel glow={accent} style={{ padding: 24, textAlign: "center", minHeight: 120, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+          <div style={{ display: "flex", justifyContent: "center", gap: 8, alignItems: "center", marginBottom: 10 }}><span style={{ fontSize: 12, color: C.inkDim }}>{qi + 1} / {round.length}</span><TierTag d={cur.d} sm /></div>
+          <div style={{ fontSize: 21, fontWeight: 900, lineHeight: 1.6 }}>{cur.q}</div>
+        </Panel>
+        <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
+          {opts.map((o, i) => {
+            let bg = `linear-gradient(120deg,${C.card},${C.card2})`, bd = C.line, anim = "", ic = null, icc;
+            if (picked !== null) { if (o === cur.a) { bg = `linear-gradient(120deg,${C.green}22,${C.green}0d)`; bd = C.green; anim = "k-correct"; ic = "check"; icc = C.green; } else if (i === picked) { bg = `linear-gradient(120deg,${C.red}22,${C.red}0d)`; bd = C.red; anim = "k-wrong"; ic = "x"; icc = C.red; } }
+            return <button key={i} className={`k-press ${anim}`} disabled={picked !== null} onClick={(e) => answer(i, e)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 16px", borderRadius: 14, fontSize: 16, fontWeight: 700, background: bg, border: `1.5px solid ${bd}`, color: C.ink, cursor: picked === null ? "pointer" : "default", textAlign: "right", fontFamily: "inherit" }}><span>{o}</span>{ic && <Icon d={I[ic]} size={20} c={icc} />}</button>;
+          })}
+        </div>
       </div>
     </div>
   );
@@ -1452,121 +1619,433 @@ function Statistics({ p, acc, setScreen }) {
   );
 }
 
-// ============ MODE: DETECTIVE (المحقق) ============
+// ============ MODE: DETECTIVE (المحقق) — Case Menu + 8-phase investigation ============
+// Phase flow per case: 1 الإحاطة · 2 مسرح الجريمة · 3 المشتبه بهم · 4 جمع الأدلة (تريفيا) ·
+// 5 ملف الأدلة · 6 الاستجواب · 7 الاتهام · 8 الحكم.
+// Each clue in phase 4 is gated by one trivia question: correct = clue revealed, wrong = clue lost for good.
+const PHASE_NAMES = ["الإحاطة", "مسرح الجريمة", "المشتبه بهم", "جمع الأدلة", "ملف الأدلة", "الاستجواب", "الاتهام", "الحكم"];
 const CASES = [
   {
-    title: "سرقة جوهرة المملكة",
-    intro: "اختفت جوهرة التاج من الخزانة الملكية ليلاً. أربعة مشتبهين، ودليل واحد صحيح. أجب لتكشف الأدلة.",
-    clues: ["بصمة على النافذة المكسورة", "خيط قماش أحمر فاخر", "أثر حذاء مقاس كبير", "رائحة عطر شرقي نادر", "مفتاح احتياطي مفقود"],
-    suspects: ["كبير الحرّاس", "خادمة القصر", "تاجر الجواهر", "مستشار الملك"],
+    id: 1, title: "سرقة جوهرة التاج",
+    brief: "اختفت جوهرة التاج من الخزانة الملكية ليلاً دون أثر اقتحام. أربعةُ مشتبهين، والحقيقة مخبّأة في الأدلة.",
+    scene: "الخزانة سليمة، والنافذة مغلقة، والباب لم يُكسر. كلّ شيءٍ تمّ بهدوءٍ من الداخل.",
+    clues: [
+      "الخزنة فُتحت بمفتاحٍ رسميّ لا بالكسر",
+      "عطرٌ شرقيّ فاخر باهظ الثمن علِق بالستارة",
+      "لا إنذار ولا اقتحام؛ الجاني يدخل دون أن يُشكّ به",
+      "وثيقة نقل الجوهرة وُقّعت بخطٍّ يعرف بروتوكول البلاط",
+    ],
+    suspects: [
+      { name: "كبير الحرّاس", role: "يحرس الباب الخارجي", line: "كنتُ في نوبتي طوال الليل ولم أغادر بابي. اسألوا سواي." },
+      { name: "خادمة القصر", role: "تنظّف الأجنحة نهاراً", line: "انتهى عملي قبل الغروب، ولا علم لي بما يجري في الليل." },
+      { name: "تاجر الجواهر", role: "زائرٌ يحتاج إذناً للدخول", line: "غادرتُ بإذنٍ وكلّ بضاعتي مسجّلة، فلِمَ تُلقون التهمة عليّ؟" },
+      { name: "مستشار الملك", role: "يملك مفاتيح البلاط وصلاحياته", line: "أنا أقربُ الناس إلى الملك، ومن مصلحتي حمايةُ كنوزه لا سرقتها." },
+    ],
     answer: "مستشار الملك",
-    solution: "المفتاح الاحتياطي والعطر النادر يشيران إلى من يملك دخولاً حرّاً وذوقاً رفيعاً — إنه المستشار.",
+    solution: "المفتاح الرسميّ، ومعرفةُ البروتوكول، والدخولُ دون شبهة، والعطرُ الفاخر — صفاتٌ لا تجتمع إلا في صاحب صلاحيات البلاط: المستشار.",
   },
   {
-    title: "لغز المكتبة المحترقة",
-    intro: "احترق جناح في المكتبة الكبرى، لكن النيران لم تكن عرضية. اجمع الأدلة وحدّد المسؤول.",
-    clues: ["بقايا زيت مصباح غريب", "مخطوطة مفقودة من الرفّ", "نافذة مفتوحة من الداخل", "قفّازات محترقة", "رسالة تهديد قديمة"],
-    suspects: ["أمين المكتبة", "الباحث المنافس", "الحارس الليلي", "الناسخ القديم"],
+    id: 2, title: "لغز المكتبة المحترقة",
+    brief: "اشتعلت النيران في جناح المخطوطات النادرة، لكنّ الحريق لم يكن عرضياً. اكشف الأدلة وحدّد المسؤول.",
+    scene: "بقي الذهبُ واللوحات سالمة، واحترق رفّ الأبحاث وحده. النار وُلِدت من الداخل.",
+    clues: [
+      "مخطوطةٌ نادرة واحدة مفقودة بينما بقي كلّ ثمينٍ آخر — الدافع معرفيّ لا ماديّ",
+      "النار بدأت عند رفّ الأبحاث المتخصصة لا عند المدخل",
+      "أوراق مسوّداتٍ بخطٍّ أكاديميّ تُركت قرب الباب",
+      "آخر مَن سجّل اسمه طلب تلك المخطوطة مرّتين فرُفض طلبه",
+    ],
+    suspects: [
+      { name: "أمين المكتبة", role: "يحفظ المكتبة ويطفئ المصابيح", line: "أغلقتُ الأبواب كعادتي وأطفأت المصابيح. المكتبة أمانةٌ في عنقي." },
+      { name: "الباحث المنافس", role: "يبحث في الرفوف المتخصصة ويطلب المخطوطات", line: "أبحثُ هنا كلّ يومٍ مثل الجميع، واهتمامي بالمخطوطات لا يجعلني مجرماً." },
+      { name: "الحارس الليلي", role: "يطوف الممرّات ليلاً", line: "رأيتُ الدخان فأطلقت الإنذار فوراً. أنا مَن حاول الإنقاذ." },
+      { name: "الناسخ القديم", role: "ينسخ النصوص العامة", line: "بصري ضعيف وأعمل على النصوص البسيطة، لا شأن لي بالرفوف النادرة." },
+    ],
     answer: "الباحث المنافس",
-    solution: "المخطوطة المفقودة ورسالة التهديد تكشفان دافعاً واضحاً: الباحث المنافس أراد إخفاء سرقته بالحريق.",
+    solution: "الدافعُ المعرفيّ، وبدءُ النار عند رفّ الأبحاث، والمسوّداتُ الأكاديمية، وطلبُ المخطوطة المرفوض — تقود كلّها إلى الباحث المنافس الذي أخفى سرقته بالحريق.",
   },
   {
-    title: "اختفاء عالِم الفلك",
-    intro: "اختفى عالِم الفلك قبيل إعلان اكتشافه الكبير. هل هو هروب أم اختطاف؟ القرائن ستجيب.",
-    clues: ["خريطة نجوم ممزّقة", "فنجان قهوة لم يبرد بعد", "حقيبة سفر نصف مملوءة", "ساعة متوقفة عند منتصف الليل", "خطاب توصية مزوّر"],
-    suspects: ["تلميذه النجيب", "ممثل جهة منافسة", "جاره الفضولي", "رفيقه في الرحلات"],
+    id: 3, title: "اختفاء عالِم الفلك",
+    brief: "اختفى عالِم الفلك قُبيل إعلان اكتشافه الكبير. هل هو هروبٌ أم اختطاف؟ القرائن تجيب.",
+    scene: "فنجانُ قهوته ما زال دافئاً، وحقيبته نصف مملوءة. غادر المكان على عجلٍ غريب.",
+    clues: [
+      "القهوةُ دافئة والحقيبة نصف مملوءة — مغادرةٌ مفاجئة قسرية لا رحلة مُدبّرة",
+      "خريطةُ النجوم التي تُثبت الاكتشاف مُزّقت وأُخذ جزؤها الحاسم",
+      "آثارُ عجلات مركبةٍ غريبة عند البوابة الخلفية",
+      "خطابٌ بختم مرصدٍ منافس يطلب تأجيل الإعلان",
+    ],
+    suspects: [
+      { name: "تلميذه النجيب", role: "يساعده في الحسابات", line: "كنتُ أنتظر إعلانه بفخر، فنجاحه نجاحي. لِمَ أؤذيه؟" },
+      { name: "ممثل جهة منافسة", role: "يأتي من مرصدٍ منافس", line: "زرته لتهنئته فحسب ثم غادرت. المنافسةُ العلمية شريفة." },
+      { name: "جاره الفضولي", role: "يسكن بجواره", line: "سمعتُ أصواتاً في الليل لكني لم أتدخّل، فهذا ليس شأني." },
+      { name: "رفيقه في الرحلات", role: "يرافقه في الأسفار", line: "كنتُ مسافراً خارج المدينة وقت الحادثة، ولي شهود." },
+    ],
     answer: "ممثل جهة منافسة",
-    solution: "القهوة الساخنة والحقيبة نصف المملوءة تدلّان على مغادرة مفاجئة قسرية — جهة منافسة أرادت الاكتشاف.",
+    solution: "المغادرةُ القسرية، وسرقةُ جزء الخريطة الحاسم، وآثارُ مركبة الغريب، وخطابُ المرصد المنافس — تشير إلى ممثل الجهة المنافسة الذي أراد منع الاكتشاف.",
+  },
+  {
+    id: 4, title: "تسميمٌ في المأدبة",
+    brief: "سقط ضيفُ الشرف مغشيّاً عليه بعد طبقٍ واحد في مأدبة القصر. مَن دسّ السمّ؟",
+    scene: "كلّ الموائد سليمة، والسمّ في الطبق الذي قُدّم للضيف وحده. يدٌ قرّبته خصيصاً.",
+    clues: [
+      "السمّ كان في الطبق المُعَدّ للضيف وحده — قُرِّب إليه عمداً",
+      "عُثر في المطبخ على عشبةٍ سامّة نادرة يعرفها أهلُ الطهي",
+      "بصمةٌ دهنية من زيت الطهي على كأس الضيف",
+      "الطاهي الجديد عُيّن قبل المأدبة بيومين بتزكيةٍ مجهولة",
+    ],
+    suspects: [
+      { name: "الطبّاخ الجديد", role: "يحضّر الأطباق في المطبخ", line: "أنا جديدٌ وأحرص على سمعتي أكثر من الجميع، فلِمَ أُفسد أوّل مأدبة لي؟" },
+      { name: "الساقي", role: "يصبّ الشراب فقط", line: "أنا أصبّ الشراب ولا أقترب من الأطباق إطلاقاً." },
+      { name: "ضيف غيور", role: "جالسٌ على المائدة", line: "نعم لا أحبّه، لكنّ الكره شيءٌ والقتلَ شيءٌ آخر." },
+      { name: "خادم المائدة", role: "يحمل الأطباق من المطبخ", line: "أحملُ ما يُعطى لي ولا أعرف ما بداخل الأطباق." },
+    ],
+    answer: "الطبّاخ الجديد",
+    solution: "السمُّ في الطبق المُعَدّ خصيصاً، والعشبةُ المعروفة لأهل الطهي، وبصمةُ زيت الطهي، والتعيينُ المريب قبل المأدبة — تدينُ الطبّاخ الجديد دون سواه.",
+  },
+  {
+    id: 5, title: "اللوحة المزوّرة",
+    brief: "اكتُشف أنّ لوحة المتحف الأشهر صارت نسخةً مقلّدة. متى ومَن بدّلها؟",
+    scene: "الإطار في مكانه والقاعة مرتّبة، لكنّ طلاء اللوحة الجديد لم يجفّ بعد. التبديل حديث.",
+    clues: [
+      "النسخة طلاؤها لم يجفّ تماماً — عملٌ حديثٌ باحتراف",
+      "خيوطُ قماش اللوحة الجديدة من نوعٍ يُستخدم في الترميم",
+      "كاميرا القاعة عُطّلت من لوحة التحكم الداخلية لا بالكسر",
+      "آخر مَن سُجّل دخوله للقاعة المغلقة طلب «فحص حالة اللوحة»",
+    ],
+    suspects: [
+      { name: "المرمّم", role: "يرمّم اللوحات ويملك مفاتيح القاعات المغلقة", line: "عملي إنقاذُ اللوحات لا تزويرها، أمضيتُ عمري في حمايتها." },
+      { name: "الحارس", role: "يراقب الكاميرات", line: "تعطّلت الكاميرا فجأةً وأبلغتُ عن العطل في حينه." },
+      { name: "زائر فنّان", role: "زائرٌ عابر", line: "أعجبتني اللوحة فرسمتها في دفتري، هذا كلّ ما في الأمر." },
+      { name: "أمين المعرض", role: "ينظّم العرض", line: "أنا مَن اكتشف التزوير وأبلغ عنه، فكيف أكونُ الجاني؟" },
+    ],
+    answer: "المرمّم",
+    solution: "الطلاءُ غير الجاف باحتراف، وخيوطُ قماش الترميم، والدخولُ الداخليّ للقاعة المغلقة بحجّة الفحص — تكشف أنّ المرمّم وحده يملك المهارة والوصول معاً.",
+  },
+  {
+    id: 6, title: "سرقةٌ في القطار",
+    brief: "سُرقت حقيبةٌ ثمينة من مقصورةٍ مقفلةٍ من الداخل أثناء سير القطار. كيف ومَن؟",
+    scene: "باب المقصورة مقفلٌ من الداخل، ولا نافذة مكسورة. دخل أحدٌ بمفتاحٍ ثم خرج.",
+    clues: [
+      "المقصورة كانت مقفلةً من الداخل وفُتحت بمفتاحٍ عام",
+      "سُرقت حقيبةُ صاحب التذكرة الذهبية وحدها — الجاني يعرف مَن يحمل الثمين",
+      "قصاصةُ ثقبِ تذكرة (من الخرّامة) سقطت قرب الحقيبة",
+      "تنقّل الجاني بين العربات دون أن يلفت الانتباه والقطارُ يسير",
+    ],
+    suspects: [
+      { name: "عامل التذاكر", role: "يحمل المفتاح العام ويتنقّل بين العربات ويرى التذاكر", line: "أمرّ على الجميع بحكم عملي، فوجودي في كلّ مكانٍ طبيعيٌّ لا تهمة." },
+      { name: "راكبٌ نائم", role: "في مقصورته", line: "كنتُ غارقاً في النوم، وأيقظتني الجلبةُ فقط." },
+      { name: "بائع العربة", role: "يبيع في عربةٍ واحدة", line: "لا أغادر عربتي ولا أملك مفاتيح المقصورات." },
+      { name: "سائق القطار", role: "في مقدّمة القطار لا يغادر مقصورته", line: "لم أترك مقصورة القيادة لحظة، فالقطار مسؤوليتي." },
+    ],
+    answer: "عامل التذاكر",
+    solution: "المفتاحُ العام، ومعرفةُ صاحب التذكرة الذهبية، وقصاصةُ الخرّامة، والتنقّلُ الحرّ بين العربات — صفاتٌ لا تجتمع إلا في عامل التذاكر.",
+  },
+  {
+    id: 7, title: "تخريب الحديقة الملكية",
+    brief: "أُتلفت أزهارُ الحديقة الملكية النادرة في ليلةٍ واحدة. مَن وراء هذا الانتقام؟",
+    scene: "العشبُ سليم، والأزهارُ النادرة وحدها اقتُلعت. يدٌ تعرف قيمة كلّ نبتة فعلت هذا.",
+    clues: [
+      "الأزهارُ النادرة وحدها أُتلفت بينما بقي العشب — يدٌ تعرف قيمة كلّ نبتة",
+      "أداةُ تقليمٍ محترفة تُركت في الطين",
+      "البوابةُ الخلفية فُتحت بمفتاحٍ قديمٍ لم يُسترجع",
+      "رسالةٌ غاضبة عن «فصلٍ ظالم» وُجدت ممزّقة قرب الحوض",
+    ],
+    suspects: [
+      { name: "البستاني المطرود", role: "عمل بالحديقة وطُرد مؤخراً", line: "أحببتُ هذه الحديقة أكثر من أصحابها، فكيف أؤذي ما زرعته بيدي؟" },
+      { name: "البستاني الجديد", role: "عُيّن للتوّ", line: "بدأتُ العمل أمس فقط ولا أعرف خبايا المكان بعد." },
+      { name: "زائر النزهة", role: "يتنزّه أحياناً", line: "أتنزّه نهاراً فقط وأغادر قبل الإغلاق." },
+      { name: "بائع الزهور", role: "يبيع عند البوابة", line: "أقفُ عند البوابة لأبيع، ولا أدخل الحديقة أصلاً." },
+    ],
+    answer: "البستاني المطرود",
+    solution: "إتلافُ النادر دون العشب، وأداةُ التقليم المحترفة، والمفتاحُ القديم غير المُعاد، ورسالةُ الفصل الظالم — تجتمع كلّها على البستاني المطرود الذي انتقم.",
+  },
+  {
+    id: 8, title: "رسالة تهديدٍ للملك",
+    brief: "وصلت رسالةُ تهديدٍ إلى مكتب الملك دون أن تمرّ بالبريد. مَن كتبها ودسّها؟",
+    scene: "الرسالةُ بين أوراق الملك الخاصة، خطّها متقن وختمها رسميّ. لم تأتِ من خارج البلاط.",
+    clues: [
+      "كُتبت بخطٍّ بلاطيّ متقنٍ وحبرٍ رسميّ من الديوان",
+      "طُويت بطريقةٍ بروتوكولية لا يعرفها العامة",
+      "خُتمت بشمعٍ من نوعٍ يُخصَّص لمراسلات الديوان",
+      "أُدرجت بين أوراق الملك دون مرورٍ بالبريد — يدٌ تصل مكتبه",
+    ],
+    suspects: [
+      { name: "الكاتب الرسمي", role: "يكتب مراسلات الديوان ويصل مكتب الملك", line: "أكتبُ بأمر الملك لا ضدّه، وقلمي في خدمته منذ سنين." },
+      { name: "حارس البوابة", role: "يحرس المدخل", line: "أحرسُ الباب الخارجي ولا أدخل الأجنحة الداخلية." },
+      { name: "طاهٍ غاضب", role: "يعمل في المطبخ", line: "غضبتُ يوماً بسبب الأجر، لكني لا أُحسن حتى كتابة اسمي." },
+      { name: "تاجر زائر", role: "يأتي للبيع", line: "أبيعُ وأرحل، ولا تصل يدي إلى أوراق القصر." },
+    ],
+    answer: "الكاتب الرسمي",
+    solution: "الخطُّ البلاطيّ، والحبرُ والشمعُ الرسميّان، والطيُّ البروتوكوليّ، والوصولُ المباشر لمكتب الملك — لا تتوفّر مجتمعةً إلا للكاتب الرسمي.",
+  },
+  {
+    id: 9, title: "اختفاء كأس البطولة",
+    brief: "اختفى كأسُ البطولة من غرفةٍ مقفلة قُبيل التتويج، وحلّت مكانه نسخةٌ مقلّدة. مَن بدّله؟",
+    scene: "الغرفة مقفلةٌ ومفتاحها مع المنظّمين فقط، والكأسُ المعروض نسخةٌ تخدع غير الخبير.",
+    clues: [
+      "الكأس اختفى من غرفةٍ مقفلة مفتاحها مع المنظّمين فقط",
+      "بُدّل بنسخةٍ مقلّدة تخدع غير الخبير — الجاني يعرف تفاصيل الكأس",
+      "جدولُ المباريات عُدّل ليُخلي الغرفة وقت الاختفاء",
+      "صافرةُ حَكَمٍ سقطت خلف الخزانة",
+    ],
+    suspects: [
+      { name: "الحَكَم", role: "ينظّم المباريات ويملك المفاتيح وجدول اللقاءات", line: "أنا حامي نزاهة البطولة، واتهامي يطعنُ في كلّ قراراتي." },
+      { name: "لاعبٌ خاسر", role: "شارك في المباراة", line: "خسرتُ وغادرت غاضباً إلى بيتي مباشرة." },
+      { name: "مشجّع متحمّس", role: "في المدرّجات", line: "لم أبرح مدرّجي طوال اليوم، فاسألوا من حولي." },
+      { name: "مصوّر صحفي", role: "يصوّر الحدث", line: "كاميرتي كانت موجّهة للملعب لا للغرف المغلقة." },
+    ],
+    answer: "الحَكَم",
+    solution: "مفتاحُ الغرفة، ومعرفةُ تفاصيل الكأس، وتعديلُ الجدول لإخلائها، وصافرةُ الحَكَم — تشير كلّها إلى الحَكَم الذي استغلّ موقعه.",
+  },
+  {
+    id: 10, title: "سرقة الوصفة السرّية",
+    brief: "ظهرت وصفةُ المطعم السرّية في مطعمٍ منافسٍ افتُتح فجأة. مَن سرّبها من الداخل؟",
+    scene: "الوصفةُ ما زالت في خزانتها لكنها نُسخت ثم أُعيدت، وعلى ورقتها أثرُ مطبخ.",
+    clues: [
+      "الوصفةُ نُسخت يدوياً ثم أُعيدت إلى مكانها — لم تُسرق بل صُوّرت بإتقان",
+      "آثارُ دقيقٍ وبهارات على الورقة المنسوخة — يدٌ تعمل في المطبخ",
+      "الخزانةُ فُتحت برمزٍ لا يعرفه إلا المقرّبون من الطاهي الكبير",
+      "افتُتح مطعمٌ منافس بأطباقٍ مطابقة بعد أيامٍ قليلة",
+    ],
+    suspects: [
+      { name: "المساعد الطموح", role: "يساعد الطاهي الكبير ويعرف أسراره", line: "تعلّمتُ كلّ شيءٍ من معلّمي وأدينُ له بالولاء، فلِمَ أخونه؟" },
+      { name: "نادل المطعم", role: "يخدم الطاولات", line: "أخدمُ الطاولات فقط ولا أدخل مطبخ الأسرار." },
+      { name: "زبونٌ دائم", role: "يتردّد على المطعم", line: "آكلُ هنا كلّ أسبوعٍ لأني أحبّ الطعام، لا الوصفات." },
+      { name: "منافسٌ قديم", role: "يملك مطعماً منافساً", line: "وصفاتي من ابتكاري، والتشابهُ لا يعني السرقة." },
+    ],
+    answer: "المساعد الطموح",
+    solution: "النسخُ اليدويّ ثم الإعادة، وآثارُ الدقيق والبهارات، ومعرفةُ رمز الخزانة الخاص بالمقرّبين — تدلّ على مساعدٍ من الداخل سرّب الوصفة لمنافس، وهو المساعد الطموح.",
   },
 ];
+
 function DetectivePlay({ mode, p, diff, finishRound, markSeen, setScreen, addBurst }) {
   const accent = mode.color;
-  const theCase = useRef(CASES[(Math.random() * CASES.length) | 0]).current;
-  const round = useRef(selectQ(ALL_Q, p.seen, diff.tier, 5)).current;
-  const [phase, setPhase] = useState("intro"); // intro | clue | final
+  const [caseIdx, setCaseIdx] = useState(null);   // null = Case Selection Menu
+  const [phase, setPhase] = useState(1);          // 1..8
+  const [round, setRound] = useState([]);          // trivia questions (one per clue)
   const [qi, setQi] = useState(0);
-  const [opts, setOpts] = useState(() => round.length ? shuffle(round[0].opts) : []);
+  const [opts, setOpts] = useState([]);
   const [picked, setPicked] = useState(null);
-  const [unlocked, setUnlocked] = useState([]); // indices of revealed clues
+  const [unlocked, setUnlocked] = useState([]);    // clue indices revealed (correct answers)
+  const [lost, setLost] = useState([]);            // clue indices lost forever (wrong answers)
   const [right, setRight] = useState(0);
   const [finalPick, setFinalPick] = useState(null);
+  const [solved, setSolved] = useState(false);
   const lockRef = useRef(false);
+  const theCase = caseIdx != null ? CASES[caseIdx] : null;
 
-  if (!round.length) return <Empty icon="fingerprint" text="لا توجد أدلة كافية" />;
-  const cur = round[qi];
+  const startCase = (idx) => {
+    const c = CASES[idx];
+    const r = selectQ(ALL_Q, p.seen, diff.tier, c.clues.length); // player's current difficulty tier
+    setCaseIdx(idx); setRound(r); setQi(0);
+    setOpts(r.length ? shuffle(r[0].opts) : []);
+    setPicked(null); setUnlocked([]); setLost([]); setRight(0); setFinalPick(null); setSolved(false);
+    lockRef.current = false; setPhase(1); SFX.nav();
+  };
+  const caseBack = () => { SFX.nav(); setCaseIdx(null); setPhase(1); };
 
-  const answer = (i, ev) => {
+  // phase 4 — answer a trivia question to unlock (or lose) the matching clue
+  const answerClue = (i, ev) => {
     if (lockRef.current) return; lockRef.current = true; setPicked(i);
+    const cur = round[qi];
     const ok = opts[i] === cur.a; markSeen(cur.id, ok);
-    if (ok) { SFX.clue(); setRight(r => r + 1); setUnlocked(u => [...u, qi]); addBurst(ev, accent); } else SFX.wrong();
+    if (ok) { SFX.clue(); setRight(r => r + 1); setUnlocked(u => [...u, qi]); addBurst(ev, accent); }
+    else { SFX.wrong(); setLost(l => [...l, qi]); }   // clue permanently lost for this playthrough
     setTimeout(() => {
-      if (qi + 1 >= round.length) setPhase("final");
+      if (qi + 1 >= round.length) setPhase(5);
       else { setQi(qi + 1); setOpts(shuffle(round[qi + 1].opts)); setPicked(null); lockRef.current = false; }
     }, 1100);
   };
+
   const solve = (s) => {
     setFinalPick(s);
-    const correct = s === theCase.answer;
+    const correct = s === theCase.answer; setSolved(correct);
     if (correct) SFX.win(); else SFX.wrong();
-    setTimeout(() => finishRound(right + (correct ? 2 : 0), round.length + 2, { caseSolved: correct, bonusGem: correct ? 3 : 0, bonusCoin: correct ? 200 : 0, scoreMul: 1.5, headline: correct ? "قضية محلولة!" : "القضية لم تُحلّ" }), 1600);
+    setTimeout(() => setPhase(8), 1200);
   };
+  const finish = () => finishRound(right + (solved ? 2 : 0), round.length + 2, { caseSolved: solved, bonusGem: solved ? 3 : 0, bonusCoin: solved ? 200 : 0, scoreMul: 1.5, headline: solved ? "قضية محلولة!" : "القضية لم تُحلّ" });
 
-  if (phase === "intro") return (
+  // shared header (back-to-menu + phase progress) for all in-case phases
+  const stepHeader = (ph) => (
+    <>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+        <IconBtn icon="arrow" onClick={caseBack} />
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 11, color: accent, fontWeight: 800 }}>المرحلة {ph} من 8 · {PHASE_NAMES[ph - 1]}</div>
+          <div style={{ fontSize: 16, fontWeight: 900, lineHeight: 1.3 }}>{theCase.title}</div>
+        </div>
+        <Icon d={I.fingerprint} size={22} c={accent} />
+      </div>
+      <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>{PHASE_NAMES.map((_, i) => <div key={i} style={{ flex: 1, height: 4, borderRadius: 3, background: i < ph ? accent : "rgba(150,170,220,0.14)", transition: "background .3s" }} />)}</div>
+    </>
+  );
+
+  // ============ CASE SELECTION MENU ============
+  if (caseIdx == null) return (
     <div className="k-fade" style={{ padding: 16 }}>
-      <Header title="المحقق" onBack={() => setScreen("hub")} icon="fingerprint" color={accent} />
-      <Panel glow={accent} style={{ padding: 22, textAlign: "center" }}>
-        <div className="k-pop" style={{ display: "inline-grid", placeItems: "center", width: 76, height: 76, borderRadius: 24, background: `${accent}1c`, border: `1px solid ${accent}44`, marginBottom: 14 }}><Icon d={I.fingerprint} size={40} c={accent} /></div>
-        <h2 style={{ fontSize: 21, fontWeight: 900, margin: "0 0 8px" }}>{theCase.title}</h2>
-        <div style={{ fontSize: 13.5, color: C.inkDim, lineHeight: 1.7 }}>{theCase.intro}</div>
-      </Panel>
-      <div style={{ display: "flex", gap: 8, justifyContent: "center", margin: "16px 0", color: C.inkDim, fontSize: 12.5 }}><Icon d={I.search} size={16} c={accent} />{round.length} أدلة لتكشفها · ثم حدّد الجاني</div>
-      <GoldBtn onClick={() => { SFX.nav(); setPhase("clue"); }} style={{ padding: "14px" }}>ابدأ التحقيق</GoldBtn>
+      <Header title="ملفّات القضايا" onBack={() => setScreen("hub")} icon="fingerprint" color={accent} />
+      <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 14, color: C.inkDim, fontSize: 12.5 }}><Icon d={I.search} size={16} c={accent} />اختر قضيةً لتبدأ التحقيق · {CASES.length} قضايا</div>
+      <div style={{ display: "grid", gap: 10 }}>
+        {CASES.map((c, i) => (
+          <button key={c.id} className="k-card k-press" onClick={() => startCase(i)} style={{ animationDelay: `${i * 30}ms`, display: "flex", alignItems: "center", gap: 12, padding: 14, borderRadius: 16, textAlign: "right", background: `linear-gradient(160deg,${C.card},${C.card2})`, border: `1px solid ${accent}22`, cursor: "pointer", fontFamily: "inherit" }}>
+            <div style={{ display: "grid", placeItems: "center", width: 44, height: 44, flexShrink: 0, borderRadius: 13, background: `${accent}1c`, border: `1px solid ${accent}44`, color: accent, fontWeight: 900, fontSize: 17 }}>{c.id}</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 15.5, fontWeight: 900, color: C.ink, marginBottom: 3 }}>{c.title}</div>
+              <div style={{ fontSize: 12, color: C.inkDim, lineHeight: 1.5, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{c.brief}</div>
+              <div style={{ display: "flex", gap: 12, marginTop: 6, fontSize: 10.5, color: C.inkFaint }}><span><Icon d={I.search} size={11} c={C.inkFaint} /> {c.clues.length} أدلة</span><span><Icon d={I.user} size={11} c={C.inkFaint} /> {c.suspects.length} مشتبهين</span></div>
+            </div>
+            <Icon d={I.arrow} size={18} c={accent} />
+          </button>
+        ))}
+      </div>
     </div>
   );
 
-  if (phase === "final") return (
+  // ============ PHASE 1 — البريفنغ / الإحاطة ============
+  if (phase === 1) return (
     <div className="k-fade" style={{ padding: 16 }}>
-      <Header title="الحلّ النهائي" onBack={() => setScreen("hub")} icon="fingerprint" color={accent} />
-      <div style={{ marginBottom: 14 }}>
-        <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}><Icon d={I.search} size={16} c={accent} />الأدلة المكتشفة ({unlocked.length}/{round.length})</div>
-        <div style={{ display: "grid", gap: 7 }}>
-          {theCase.clues.slice(0, round.length).map((clue, i) => {
-            const got = unlocked.includes(i);
-            return <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 11, background: got ? `${accent}12` : "rgba(150,170,220,0.05)", border: `1px solid ${got ? accent + "44" : C.line}` }}><Icon d={I[got ? "check" : "lock"]} size={16} c={got ? accent : C.inkFaint} /><span style={{ fontSize: 13, color: got ? C.ink : C.inkFaint }}>{got ? clue : "دليل لم يُكشف"}</span></div>;
-          })}
+      {stepHeader(1)}
+      <Panel glow={accent} style={{ padding: 22, textAlign: "center" }}>
+        <div className="k-pop" style={{ display: "inline-grid", placeItems: "center", width: 72, height: 72, borderRadius: 22, background: `${accent}1c`, border: `1px solid ${accent}44`, marginBottom: 14 }}><Icon d={I.fingerprint} size={38} c={accent} /></div>
+        <h2 style={{ fontSize: 20, fontWeight: 900, margin: "0 0 8px" }}>{theCase.title}</h2>
+        <div style={{ fontSize: 13.5, color: C.inkDim, lineHeight: 1.8 }}>{theCase.brief}</div>
+      </Panel>
+      <GoldBtn onClick={() => { SFX.nav(); setPhase(2); }} style={{ marginTop: 16, padding: "14px" }}>عاين مسرح الجريمة</GoldBtn>
+    </div>
+  );
+
+  // ============ PHASE 2 — مسرح الجريمة ============
+  if (phase === 2) return (
+    <div className="k-fade" style={{ padding: 16 }}>
+      {stepHeader(2)}
+      <Panel glow={accent} style={{ padding: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, color: accent, fontWeight: 800, fontSize: 13 }}><Icon d={I.eye} size={17} c={accent} />ما تراه عند الوصول</div>
+        <div style={{ fontSize: 14.5, color: C.ink, lineHeight: 1.9 }}>{theCase.scene}</div>
+      </Panel>
+      <GoldBtn onClick={() => { SFX.nav(); setPhase(3); }} style={{ marginTop: 16, padding: "14px" }}>تعرّف على المشتبه بهم</GoldBtn>
+    </div>
+  );
+
+  // ============ PHASE 3 — المشتبه بهم ============
+  if (phase === 3) return (
+    <div className="k-fade" style={{ padding: 16 }}>
+      {stepHeader(3)}
+      <div style={{ textAlign: "center", marginBottom: 10, fontSize: 12.5, color: C.inkDim }}>أربعةُ مشتبهين. لا تثق بكلامهم — الأدلة وحدها تكشف الحقيقة.</div>
+      <div style={{ display: "grid", gap: 9 }}>
+        {theCase.suspects.map((s) => (
+          <div key={s.name} style={{ display: "flex", alignItems: "center", gap: 12, padding: 13, borderRadius: 14, background: `linear-gradient(160deg,${C.card},${C.card2})`, border: `1px solid ${C.line}` }}>
+            <div style={{ display: "grid", placeItems: "center", width: 40, height: 40, flexShrink: 0, borderRadius: 12, background: `${accent}14`, border: `1px solid ${accent}33` }}><Icon d={I.user} size={20} c={accent} /></div>
+            <div><div style={{ fontSize: 14.5, fontWeight: 800 }}>{s.name}</div><div style={{ fontSize: 11.5, color: C.inkDim }}>{s.role}</div></div>
+          </div>
+        ))}
+      </div>
+      <GoldBtn onClick={() => { SFX.nav(); setPhase(4); }} style={{ marginTop: 16, padding: "14px" }}>ابدأ جمع الأدلة</GoldBtn>
+    </div>
+  );
+
+  // ============ PHASE 4 — جمع الأدلة (تريفيا) ============
+  if (phase === 4) {
+    if (!round.length) return (
+      <div className="k-fade" style={{ padding: 16 }}>
+        {stepHeader(4)}
+        <Empty icon="search" text="لا توجد أسئلةٌ كافية لجمع الأدلة" />
+        <GoldBtn onClick={() => { SFX.nav(); setPhase(5); }} style={{ marginTop: 8, padding: "14px" }}>إلى ملف الأدلة</GoldBtn>
+      </div>
+    );
+    const cur = round[qi];
+    const justRight = picked !== null && opts[picked] === cur.a;
+    const justWrong = picked !== null && opts[picked] !== cur.a;
+    return (
+      <div className="k-fade">
+        <PlayHeader {...{ accent, mode, qi, total: round.length, setScreen: caseBack, streak: unlocked.length }} />
+        <div style={{ padding: "0 16px" }}>
+          <div style={{ textAlign: "center", marginBottom: 10, fontSize: 12, color: accent, fontWeight: 700 }}>أجب بصوابٍ لتكشف الدليل {qi + 1} — والخطأُ يُضيّعه للأبد</div>
+          <Panel glow={accent} style={{ padding: 22, textAlign: "center", minHeight: 110, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+            <div style={{ display: "flex", justifyContent: "center", gap: 8, alignItems: "center", marginBottom: 8 }}><TierTag d={cur.d} sm /></div>
+            <div style={{ fontSize: 20, fontWeight: 900, lineHeight: 1.6 }}>{cur.q}</div>
+          </Panel>
+          <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
+            {opts.map((o, i) => {
+              let bg = `linear-gradient(120deg,${C.card},${C.card2})`, bd = C.line, anim = "", ic = null, icc;
+              if (picked !== null) { if (o === cur.a) { bg = `linear-gradient(120deg,${C.green}22,${C.green}0d)`; bd = C.green; anim = "k-correct"; ic = "check"; icc = C.green; } else if (i === picked) { bg = `linear-gradient(120deg,${C.red}22,${C.red}0d)`; bd = C.red; anim = "k-wrong"; ic = "x"; icc = C.red; } }
+              return <button key={i} className={`k-press ${anim}`} disabled={picked !== null} onClick={(e) => answerClue(i, e)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 16px", borderRadius: 14, fontSize: 16, fontWeight: 700, background: bg, border: `1.5px solid ${bd}`, color: C.ink, cursor: picked === null ? "pointer" : "default", textAlign: "right", fontFamily: "inherit" }}><span>{o}</span>{ic && <Icon d={I[ic]} size={20} c={icc} />}</button>;
+            })}
+          </div>
+          {justRight && <Panel className="k-fade" style={{ marginTop: 14, padding: 13, display: "flex", alignItems: "center", gap: 10, border: `1px solid ${accent}44` }}><Icon d={I.search} size={18} c={accent} /><span style={{ fontSize: 13, fontWeight: 700 }}>دليلٌ جديد: {theCase.clues[qi]}</span></Panel>}
+          {justWrong && <Panel className="k-fade" style={{ marginTop: 14, padding: 13, display: "flex", alignItems: "center", gap: 10, border: `1px solid ${C.red}44` }}><Icon d={I.lock} size={18} c={C.red} /><span style={{ fontSize: 13, fontWeight: 700, color: C.red }}>ضاع هذا الدليل للأبد!</span></Panel>}
         </div>
       </div>
-      <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 10, textAlign: "center" }}>من هو الجاني؟</div>
+    );
+  }
+
+  // ============ PHASE 5 — ملف الأدلة ============
+  if (phase === 5) return (
+    <div className="k-fade" style={{ padding: 16 }}>
+      {stepHeader(5)}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 12, fontSize: 13, fontWeight: 800 }}><Icon d={I.search} size={16} c={accent} />كشفتَ {unlocked.length} من {theCase.clues.length} أدلة</div>
+      <div style={{ display: "grid", gap: 8 }}>
+        {theCase.clues.map((clue, i) => {
+          const got = unlocked.includes(i);
+          return <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 13px", borderRadius: 12, background: got ? `${accent}12` : "rgba(150,170,220,0.05)", border: `1px solid ${got ? accent + "44" : C.line}` }}><Icon d={I[got ? "check" : "lock"]} size={16} c={got ? accent : C.inkFaint} /><span style={{ fontSize: 13, color: got ? C.ink : C.inkFaint }}>{got ? clue : "دليلٌ ضاع — أجبتَ خطأ"}</span></div>;
+        })}
+      </div>
+      {unlocked.length === 0 && <div style={{ textAlign: "center", marginTop: 12, fontSize: 12.5, color: C.red, fontWeight: 700 }}>لم تكشف أيّ دليل — ستعتمد على حدسك وحده!</div>}
+      <GoldBtn onClick={() => { SFX.nav(); setPhase(6); }} style={{ marginTop: 16, padding: "14px" }}>استجوب المشتبه بهم</GoldBtn>
+    </div>
+  );
+
+  // ============ PHASE 6 — الاستجواب (تصريحاتٌ غامضة) ============
+  if (phase === 6) return (
+    <div className="k-fade" style={{ padding: 16 }}>
+      {stepHeader(6)}
+      <div style={{ textAlign: "center", marginBottom: 12, fontSize: 12.5, color: C.inkDim, lineHeight: 1.7 }}>كلٌّ منهم ينفي ويراوغ. لن يفضح أحدُهم نفسه — قارن أقوالهم بأدلّتك.</div>
+      <div style={{ display: "grid", gap: 10 }}>
+        {theCase.suspects.map((s) => (
+          <Panel key={s.name} style={{ padding: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+              <div style={{ display: "grid", placeItems: "center", width: 34, height: 34, flexShrink: 0, borderRadius: 10, background: `${accent}14`, border: `1px solid ${accent}33` }}><Icon d={I.user} size={17} c={accent} /></div>
+              <div><div style={{ fontSize: 13.5, fontWeight: 800 }}>{s.name}</div><div style={{ fontSize: 10.5, color: C.inkDim }}>{s.role}</div></div>
+            </div>
+            <div style={{ fontSize: 13, color: C.ink, lineHeight: 1.8, fontStyle: "italic", paddingRight: 4, borderRight: `2px solid ${accent}44`, paddingInlineStart: 0, paddingInlineEnd: 8 }}>«{s.line}»</div>
+          </Panel>
+        ))}
+      </div>
+      <GoldBtn onClick={() => { SFX.nav(); setPhase(7); }} style={{ marginTop: 16, padding: "14px" }}>وجّه الاتهام النهائي</GoldBtn>
+    </div>
+  );
+
+  // ============ PHASE 7 — الاتهام النهائي ============
+  if (phase === 7) return (
+    <div className="k-fade" style={{ padding: 16 }}>
+      {stepHeader(7)}
+      {unlocked.length > 0 && (
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, marginBottom: 7, display: "flex", alignItems: "center", gap: 6, color: accent }}><Icon d={I.search} size={14} c={accent} />أدلّتك ({unlocked.length})</div>
+          <div style={{ display: "grid", gap: 6 }}>
+            {theCase.clues.map((clue, i) => unlocked.includes(i) ? <div key={i} style={{ fontSize: 12, color: C.inkDim, padding: "7px 11px", borderRadius: 9, background: `${accent}10`, border: `1px solid ${accent}26` }}>• {clue}</div> : null)}
+          </div>
+        </div>
+      )}
+      <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 10, textAlign: "center" }}>مَن هو الجاني؟</div>
       <div style={{ display: "grid", gap: 10 }}>
         {theCase.suspects.map((s) => {
           let bg = `linear-gradient(120deg,${C.card},${C.card2})`, bd = C.line, ic = null, icc;
-          if (finalPick !== null) { if (s === theCase.answer) { bg = `linear-gradient(120deg,${C.green}22,${C.green}0d)`; bd = C.green; ic = "check"; icc = C.green; } else if (s === finalPick) { bg = `linear-gradient(120deg,${C.red}22,${C.red}0d)`; bd = C.red; ic = "x"; icc = C.red; } }
-          return <button key={s} className="k-press" disabled={finalPick !== null} onClick={() => solve(s)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 16px", borderRadius: 14, fontSize: 15.5, fontWeight: 700, background: bg, border: `1.5px solid ${bd}`, color: C.ink, cursor: finalPick === null ? "pointer" : "default", textAlign: "right", fontFamily: "inherit" }}><span>{s}</span>{ic && <Icon d={I[ic]} size={20} c={icc} />}</button>;
+          if (finalPick !== null) { if (s.name === theCase.answer) { bg = `linear-gradient(120deg,${C.green}22,${C.green}0d)`; bd = C.green; ic = "check"; icc = C.green; } else if (s.name === finalPick) { bg = `linear-gradient(120deg,${C.red}22,${C.red}0d)`; bd = C.red; ic = "x"; icc = C.red; } }
+          return <button key={s.name} className="k-press" disabled={finalPick !== null} onClick={() => solve(s.name)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 16px", borderRadius: 14, fontSize: 15.5, fontWeight: 700, background: bg, border: `1.5px solid ${bd}`, color: C.ink, cursor: finalPick === null ? "pointer" : "default", textAlign: "right", fontFamily: "inherit" }}><span><span style={{ fontWeight: 800 }}>{s.name}</span> <span style={{ fontSize: 11, color: C.inkDim, fontWeight: 600 }}>· {s.role}</span></span>{ic && <Icon d={I[ic]} size={20} c={icc} />}</button>;
         })}
       </div>
-      {finalPick !== null && <Panel style={{ marginTop: 14, padding: 14, fontSize: 13, lineHeight: 1.7, color: C.inkDim }}><span style={{ color: accent, fontWeight: 800 }}>الخلاصة: </span>{theCase.solution}</Panel>}
     </div>
   );
 
-  // clue phase = answer a question to unlock a clue
+  // ============ PHASE 8 — الحكم ============
   return (
-    <div className="k-fade">
-      <PlayHeader {...{ accent, mode, qi, total: round.length, setScreen, streak: 0 }} />
-      <div style={{ padding: "0 16px" }}>
-        <div style={{ textAlign: "center", marginBottom: 10, fontSize: 12, color: accent, fontWeight: 700 }}>أجب لتكشف الدليل {qi + 1}</div>
-        <Panel glow={accent} style={{ padding: 22, textAlign: "center", minHeight: 110, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-          <div style={{ display: "flex", justifyContent: "center", gap: 8, alignItems: "center", marginBottom: 8 }}><TierTag d={cur.d} sm /></div>
-          <div style={{ fontSize: 20, fontWeight: 900, lineHeight: 1.6 }}>{cur.q}</div>
-        </Panel>
-        <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
-          {opts.map((o, i) => {
-            let bg = `linear-gradient(120deg,${C.card},${C.card2})`, bd = C.line, anim = "", ic = null, icc;
-            if (picked !== null) { if (o === cur.a) { bg = `linear-gradient(120deg,${C.green}22,${C.green}0d)`; bd = C.green; anim = "k-correct"; ic = "check"; icc = C.green; } else if (i === picked) { bg = `linear-gradient(120deg,${C.red}22,${C.red}0d)`; bd = C.red; anim = "k-wrong"; ic = "x"; icc = C.red; } }
-            return <button key={i} className={`k-press ${anim}`} disabled={picked !== null} onClick={(e) => answer(i, e)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 16px", borderRadius: 14, fontSize: 16, fontWeight: 700, background: bg, border: `1.5px solid ${bd}`, color: C.ink, cursor: picked === null ? "pointer" : "default", textAlign: "right", fontFamily: "inherit" }}><span>{o}</span>{ic && <Icon d={I[ic]} size={20} c={icc} />}</button>;
-          })}
-        </div>
-        {picked !== null && opts[picked] === cur.a && <Panel className="k-fade" style={{ marginTop: 14, padding: 13, display: "flex", alignItems: "center", gap: 10, border: `1px solid ${accent}44` }}><Icon d={I.search} size={18} c={accent} /><span style={{ fontSize: 13, fontWeight: 700 }}>دليل جديد: {theCase.clues[qi]}</span></Panel>}
-      </div>
+    <div className="k-fade" style={{ padding: 22, display: "flex", flexDirection: "column", justifyContent: "center", minHeight: "100vh", textAlign: "center" }}>
+      <div className="k-pop" style={{ display: "grid", placeItems: "center", width: 92, height: 92, borderRadius: 26, margin: "0 auto", background: `radial-gradient(circle,${solved ? C.green : C.red}22,transparent)`, border: `1px solid ${solved ? C.green : C.red}55` }}><Icon d={solved ? I.crown : I.x} size={46} c={solved ? C.green : C.red} /></div>
+      <h2 style={{ fontSize: 25, fontWeight: 900, margin: "14px 0 4px", color: solved ? C.green : C.red }}>{solved ? "قضيةٌ محلولة!" : "اتهامٌ خاطئ"}</h2>
+      <div style={{ color: C.inkDim, fontSize: 14 }}>الجاني الحقيقي: <b style={{ color: C.ink }}>{theCase.answer}</b></div>
+      <Panel glow={accent} style={{ marginTop: 16, padding: 16, fontSize: 13, lineHeight: 1.9, color: C.inkDim, textAlign: "right" }}><span style={{ color: accent, fontWeight: 800 }}>الخلاصة: </span>{theCase.solution}</Panel>
+      <div style={{ marginTop: 12, fontSize: 12.5, color: C.inkDim }}>كشفتَ {unlocked.length} من {theCase.clues.length} أدلة</div>
+      <GoldBtn onClick={() => { SFX.nav(); finish(); }} style={{ marginTop: 18, padding: "14px" }}>استلم المكافآت</GoldBtn>
+      <DarkBtn onClick={caseBack} style={{ marginTop: 10 }}>قضيةٌ أخرى</DarkBtn>
     </div>
   );
 }
@@ -1731,6 +2210,812 @@ function RoulettePlay({ mode, p, diff, finishRound, markSeen, setScreen, addBurs
   );
 }
 
+// ============ MODE: ESCAPE ROOM (غرفة الهروب) — Room Menu + sequential 5-puzzle chain ============
+/*
+  DATA SHAPE — each room is fully self-contained and defines EXACTLY 5 puzzles.
+  Solving a puzzle yields `reward` (an inventory item). The next puzzle's `needs`
+  names the item required to attempt it; without it the lock message fires:
+      "تحتاج [الأداة] لفتح هذا اللغز."
+
+  Every puzzle uses a DIFFERENT real-world interaction mechanic (no trivia / MCQ).
+  The <PuzzleEngine> component (defined below EscKeypad) renders the right UI for
+  each `kind` and calls `onSolve()` once the player interactively solves it — at
+  which point EscapeRoomPlay grants `reward` and advances the chain.
+
+  room = {
+    id, title, theme, icon, color, intro,
+    escapeLine,                       // flavour shown on successful escape
+    puzzles: [                        // length MUST be 5 — one of each mechanic
+      {
+        kind:  "jigsaw" | "cipher" | "pattern" | "spatial" | "final",
+        title,                        // short label for the puzzle card
+        prompt,                       // the instruction text
+        needs:  null | "اسم الأداة",  // item required to UNLOCK (null for puzzle 1)
+        reward: "اسم الأداة",         // item granted ON SOLVE (feeds the next puzzle)
+        hint,                         // optional one-line nudge
+
+        // --- per-kind interaction fields ---
+        // jigsaw:  slices:N          → reorder N scrambled fragments into 0..N-1
+        // cipher:  legend:[[sym,ch]] → decode `code:[sym]` to the word `answer`
+        //          code:[sym], answer:"بـاب", pool:[ch,..]   (tap letters in order)
+        // pattern: show:[sym], answer:[sym], pool:[sym]      (reproduce the sequence)
+        // spatial: count:N           → rotate N shapes until all point upright
+        // final:   answer:"1234", clue → combine earlier clues on the keypad
+      }, ... x5
+    ]
+  }
+*/
+const ESCAPE_ROOMS = [
+  {
+    id: 1, title: "زنزانة الساعاتي", theme: "ميكانيكي", icon: "clock", color: "#6fe0b0",
+    intro: "حُبست في ورشة ساعاتيٍّ قديم. خمسة ألغازٍ متسلسلة تفصلك عن الباب، وكلُّ لغزٍ يمنحك أداة تفتح الذي يليه. ابدأ بتجميع المفتاح.",
+    escapeLine: "دارت التروس، ارتفع المزلاج، وانفتح الباب على ضوء النهار. لقد هربت!",
+    puzzles: [
+      // P1 — JIGSAW: accessible by default (needs:null). Rewards the Copper Key,
+      //      which unlocks P2. (Logic fix: the lock requirement lives on P2, not here.)
+      { kind: "jigsaw", title: "مفتاح مُبعثر", needs: null, reward: "مفتاح نحاسي", slices: 4,
+        prompt: "تناثرت قطع المفتاح على الطاولة. أعِد ترتيبها لتكوين المفتاح النحاسي كاملاً.",
+        hint: "بدّل القطع حتى يتدرّج اللون بسلاسةٍ من اليسار إلى اليمين." },
+      // P2 — KEYBOX: use the Copper Key from the bag to open the box, then deduce a
+      //      4-digit passcode from the slips inside.
+      { kind: "keybox", title: "الصندوق المقفل", needs: "مفتاح نحاسي", reward: "لفافة الأحجية",
+        useItem: "مفتاح نحاسي", answer: "4230",
+        prompt: "أمامك صندوقٌ نحاسيّ مقفل. استخدم المفتاح النحاسي من حقيبتك لفتحه، ثم استنتج رمز القفل ذا الأربعة أرقام من القصاصات بالداخل.",
+        hints: [
+          "القصاصة الأولى: «الخانة الثانية = عدد أوجه حجر النرد مقسومًا على ثلاثة.»",
+          "القصاصة الثانية: «الخانة الأولى ضِعف الخانة الثانية.»",
+          "القصاصة الثالثة: «الخانة الثالثة أقلّ من الخانة الأولى بواحد.»",
+          "القصاصة الرابعة: «الخانة الأخيرة هي الرقم الذي يسبق الواحد.»",
+        ],
+        hint: "احسب بالترتيب: ٦÷٣ = ٢، ثم ضِعفها = ٤، ثم انقص واحدًا = ٣، وأخيرًا صفر." },
+      // P3 — RIDDLE: type the answer word into a text field.
+      { kind: "riddle", title: "أُحجية الساعاتي", needs: "لفافة الأحجية", reward: "قرص الألوان",
+        answer: "الساعة", accept: ["الساعة", "ساعة"],
+        prompt: "على اللفافة لغز: «لها وجهٌ بلا عينين، وتسير بلا قدمين، تدلّك على الوقت ولا تنطق.» اكتب الكلمة في الخانة.",
+        hint: "ما الذي يُعلَّق على الجدار ويدقّ معلنًا الوقت؟" },
+      // P4 — MATCH: click-to-toggle each gem's colour to match the target beneath it.
+      { kind: "match", title: "تعشيق الجواهر", needs: "قرص الألوان", reward: "ذراع المزلاج",
+        palette: ["#e0556f", "#5aa9f0", "#6fe0b0", "#e0c14f"], targets: [2, 0, 3, 1],
+        prompt: "ركّب أربع جواهر في التروس. اضغط كل جوهرةٍ لتبديل لونها حتى يطابق مربّع اللون المطلوب أسفلها.",
+        hint: "اضغط الجوهرة لتدوير لونها بين أربعة ألوان؛ الهدف أن تطابق كل جوهرةٍ المربّع تحتها." },
+      // P5 — CHOICE: final lock — pick the single correct lever to open the door.
+      { kind: "choice", title: "عتلة الباب", needs: "ذراع المزلاج", reward: "حرية!",
+        options: ["العتلة المنقوش عليها ترسٌ ⚙", "العتلة الملساء اللامعة", "العتلة الصدئة المكسورة"],
+        answer: 0,
+        prompt: "ثبّتّ ذراع المزلاج، وبقيت ثلاث عتلاتٍ أمام الباب. واحدةٌ فقط تُدير الترس الرئيسي وتفتحه. أيها تسحب؟",
+        clue: "ختم الساعاتي ترسٌ صغير ⚙ — والعتلة الصحيحة وحدها تحمله.",
+        hint: "ابحث عن العتلة التي تحمل ختم الترس ⚙." },
+    ],
+  },
+  {
+    id: 2, title: "مكتبة الأسرار", theme: "أحجية", icon: "book", color: "#9aa6ff",
+    intro: "أُغلق عليك باب المكتبة القديمة عند منتصف الليل. الرفوف تُخفي سلسلةً من الأحاجي تتسلسل حتى تبلغ المخرج السرّي.",
+    escapeLine: "انزلق الرفّ جانباً كاشفاً ممرّاً سرياً. أغلقت الكتاب وخرجت إلى الحرية!",
+    puzzles: [
+      { kind: "jigsaw", title: "صفحةٌ ممزّقة", needs: null, reward: "بطاقة فهرسة", slices: 5,
+        prompt: "تمزّقت بطاقة الفهرسة إلى شرائح. رتّبها لتعود البطاقة سليمة.",
+        hint: "بدّل الشرائح حتى يتّصل التدرّج اللوني." },
+      { kind: "cipher", title: "شيفرة الكعب", needs: "بطاقة فهرسة", reward: "علامة كتاب",
+        prompt: "على كعب الكتاب رموزٌ تخفي كلمة. استعن بالجدول لفكّها.",
+        legend: [["♦", "ع"], ["♣", "ل"], ["♠", "م"], ["♥", "ق"]],
+        code: ["♦", "♣", "♠"], answer: "علم", pool: ["ع", "ل", "م", "ق", "ر", "س"],
+        hint: "اقرأ الرموز من الجدول واكتبها بالترتيب." },
+      { kind: "pattern", title: "ترتيب الرفوف", needs: "علامة كتاب", reward: "خيط الدليل",
+        prompt: "ألوان أكعِبة الكتب تشكّل نمطاً. أعِد النمط بالضغط على الرموز بالترتيب نفسه.",
+        show: ["■", "▲", "●", "■", "▲", "●"], answer: ["■", "▲", "●", "■", "▲", "●"], pool: ["■", "▲", "●"],
+        hint: "مربّع، مثلّث، دائرة — مكرّرة مرّتين." },
+      { kind: "spatial", title: "مفاتيح القفل", needs: "خيط الدليل", reward: "مفتاح الأرشيف", count: 3,
+        prompt: "ثلاثة مفاتيح مائلة على باب الأرشيف. أدِرها جميعاً لتستقيم نحو الأعلى.",
+        hint: "اضغط المفتاح ليدور حتى يشير للأعلى." },
+      { kind: "final", title: "الرفّ السرّي", needs: "مفتاح الأرشيف", reward: "حرية!",
+        prompt: "لفتح الممرّ اطبع رمز الكتب الثلاثة الذي جمعته خلال رحلتك.",
+        answer: "725", clue: "أرقام الكتب على الرفّ: ٧ ثم ٢ ثم ٥.",
+        hint: "اطبع 7 ثم 2 ثم 5." },
+    ],
+  },
+  {
+    id: 3, title: "مختبر الكيميائي", theme: "علمي", icon: "beaker", color: "#5aa9f0",
+    intro: "انغلق باب المختبر آلياً. خمسةُ أجهزةٍ مرتّبة، كلٌّ يُفعّل الذي يليه، حتى يُفتح المخرج المُحكم.",
+    escapeLine: "تعادلت التفاعلات، أُطفئ الإنذار، وانزاح الباب المُحكم. نجوت من المختبر!",
+    puzzles: [
+      { kind: "jigsaw", title: "أنبوب مكسور", needs: null, reward: "قارورة أكسجين", slices: 4,
+        prompt: "تحطّم الأنبوب إلى أربع شظايا. أعِد تركيبها بالترتيب الصحيح.",
+        hint: "رتّب الشظايا حتى يتدرّج اللون بانتظام." },
+      { kind: "cipher", title: "ملصق القارورة", needs: "قارورة أكسجين", reward: "صيغة سرّية",
+        prompt: "رموزٌ على القارورة تُخفي اسم مادّة. فكَّها بالجدول.",
+        legend: [["▲", "م"], ["●", "ا"], ["■", "ء"]],
+        code: ["▲", "●", "■"], answer: "ماء", pool: ["م", "ا", "ء", "ل", "ر"],
+        hint: "ثلاثة حروفٍ تُكوّن سائل الحياة." },
+      { kind: "pattern", title: "تتابع الذبذبات", needs: "صيغة سرّية", reward: "بلّورة ملح",
+        prompt: "راقب ذبذبات المرسمة ثم أعِد نمطها بالضغط على الرموز بالترتيب.",
+        show: ["◆", "◆", "●", "◆", "◆", "●"], answer: ["◆", "◆", "●", "◆", "◆", "●"], pool: ["◆", "●", "▲"],
+        hint: "معينان ثم دائرة، مرّتين." },
+      { kind: "spatial", title: "صمّامات الغاز", needs: "بلّورة ملح", reward: "مفتاح المخرج", count: 4,
+        prompt: "أربعة صمّاماتٍ مائلة. أدِرها جميعاً لتشير نحو الأعلى فينطفئ الإنذار.",
+        hint: "اضغط الصمّام ليدور 90° في كل مرّة." },
+      { kind: "final", title: "صمّام المخرج", needs: "مفتاح المخرج", reward: "حرية!",
+        prompt: "اطبع رمز التفاعل النهائي الذي جمعته من القراءات الثلاث.",
+        answer: "808", clue: "العدد الذرّي للأكسجين بين صفرين: ٨ ثم ٠ ثم ٨.",
+        hint: "اطبع 8 ثم 0 ثم 8." },
+    ],
+  },
+  {
+    id: 4, title: "خزنة الفرعون", theme: "تاريخي", icon: "trophy", color: "#c9a96a",
+    intro: "أُحكم خلفك بابُ المقبرة. خمسُ بواباتٍ حجرية، كلٌّ تطلب أثراً تكسبه من السابقة، حتى تبلغ كنز الخروج.",
+    escapeLine: "تحرّك الحجر الأخير ببطء، تسلّل ضوء الشمس، وخرجت من المقبرة حاملاً سرّها!",
+    puzzles: [
+      { kind: "jigsaw", title: "لوح البردية", needs: null, reward: "جعران الحجر", slices: 5,
+        prompt: "تمزّقت بردية النقوش إلى خمس شرائح. أعِد ترتيبها لتكتمل الصورة.",
+        hint: "بدّل الشرائح حتى يتّصل التدرّج." },
+      { kind: "cipher", title: "نقش الجدار", needs: "جعران الحجر", reward: "مفتاح أنخ",
+        prompt: "هيروغليفيةٌ على الجدار تُخفي كلمة. فكَّها بجدول الرموز.",
+        legend: [["☥", "ن"], ["✦", "ي"], ["❖", "ل"]],
+        code: ["☥", "✦", "❖"], answer: "نيل", pool: ["ن", "ي", "ل", "ر", "م"],
+        hint: "نهرُ مصر العظيم." },
+      { kind: "pattern", title: "درج الكهنة", needs: "مفتاح أنخ", reward: "تميمة ذهبية",
+        prompt: "أضواء الدرج تومض بنمطٍ ثابت. أعِده بالضغط على الرموز بالترتيب.",
+        show: ["★", "●", "●", "★", "●", "●"], answer: ["★", "●", "●", "★", "●", "●"], pool: ["★", "●", "◆"],
+        hint: "نجمة ثم نقطتان، مكرّرة." },
+      { kind: "spatial", title: "أعمدة المعبد", needs: "تميمة ذهبية", reward: "صولجان الخروج", count: 4,
+        prompt: "مالت أربعةُ صولجاناتٍ حجرية. أدِرها جميعاً لتنتصب نحو الأعلى.",
+        hint: "اضغط الصولجان ليدور حتى يستقيم." },
+      { kind: "final", title: "حجر المخرج", needs: "صولجان الخروج", reward: "حرية!",
+        prompt: "اطبع عام اكتشاف الكنز المنقوش على حجر المخرج — أربعة أرقام.",
+        answer: "1922", clue: "اكتُشفت مقبرة توت عنخ آمون عام ١٩٢٢.",
+        hint: "اطبع 1 ثم 9 ثم 2 ثم 2." },
+    ],
+  },
+];
+
+// puzzle "type" metadata — drives the UI label + accent icon for each kind.
+// Each kind maps to a distinct interactive mechanic rendered by <PuzzleEngine>.
+const ESCAPE_KIND = {
+  jigsaw:  { label: "تركيب",  icon: "grid" },        // reorder scrambled fragments
+  cipher:  { label: "شيفرة",  icon: "fingerprint" }, // decode symbols → word
+  pattern: { label: "نمط",    icon: "target" },      // reproduce a symbol sequence
+  spatial: { label: "إدارة",  icon: "refresh" },     // rotate shapes upright
+  final:   { label: "الباب",  icon: "door" },        // combine clues on the keypad
+  keybox:  { label: "الصندوق", icon: "lock" },       // use a held key → deduce a passcode
+  riddle:  { label: "أُحجية",  icon: "fingerprint" }, // type the answer word
+  match:   { label: "تطابق",  icon: "wheel" },       // toggle colours to match targets
+  choice:  { label: "الباب",  icon: "door" },        // pick the correct option to open
+};
+
+// ---------- shared keypad / option helpers for the play screen ----------
+const EscKeypad = ({ accent, value, setValue, maxLen, onSubmit, disabled }) => {
+  const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "مسح", "0", "تأكيد"];
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 9, marginTop: 14 }}>
+      {keys.map((k) => {
+        const isAct = k === "تأكيد", isDel = k === "مسح";
+        return (
+          <button key={k} className="k-press" disabled={disabled || (isAct && value.length === 0)}
+            onClick={(e) => { if (disabled) return; SFX.tap(); if (isDel) setValue(value.slice(0, -1)); else if (isAct) onSubmit(e); else if (value.length < maxLen) setValue(value + k); }}
+            style={{ padding: "15px 0", borderRadius: 13, fontSize: 17, fontWeight: 800, fontFamily: "inherit", cursor: "pointer", color: isAct ? "#0b1020" : C.ink, border: `1px solid ${isAct ? accent : C.line}`, background: isAct ? `linear-gradient(135deg,${accent},${accent}bb)` : isDel ? "rgba(232,85,80,0.12)" : "rgba(150,170,220,0.07)", opacity: (disabled || (isAct && value.length === 0)) ? 0.5 : 1 }}>
+            {k}
+          </button>
+        );
+      })}
+    </div>
+  );
+};
+
+// ============================================================================
+//  PUZZLE ENGINE — interactive, non-trivia mechanics for the escape chain.
+//  Each puzzle component is fully self-contained: it manages its own
+//  interaction state and calls `onSolve(point)` exactly once when the player
+//  solves it interactively (drag/swap, decode, sequence, rotate, or combine).
+//  `onWrong()` triggers the shared shake feedback on the puzzle card.
+//  PuzzleEngine is mounted with a `key` tied to the active step, so switching
+//  puzzles remounts the component and resets all per-puzzle state for free.
+// ============================================================================
+
+// center-point of a click target, captured synchronously for the confetti burst
+const escCenter = (ev) => {
+  const r = ev && ev.currentTarget && ev.currentTarget.getBoundingClientRect ? ev.currentTarget.getBoundingClientRect() : null;
+  return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null;
+};
+// Fisher–Yates (returns a new array)
+const escShuffle = (arr) => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+// (1) JIGSAW — reorder scrambled fragments to reassemble the picture (a key).
+function JigsawPuzzle({ puzzle, accent, solved, onSolve, onWrong }) {
+  const n = puzzle.slices || 4;
+  const ids = useMemo(() => Array.from({ length: n }, (_, i) => i), [n]);
+  const [order, setOrder] = useState(() => {
+    let o = escShuffle(ids), g = 0;
+    while (o.every((v, i) => v === i) && g++ < 16) o = escShuffle(ids); // never start already solved
+    return o;
+  });
+  const [sel, setSel] = useState(null);
+  const [done, setDone] = useState(false);
+  const locked = done || solved;
+  const TW = 58, H = 92, total = TW * n;
+  const grad = `linear-gradient(90deg, ${accent}, ${C.violet} 50%, ${accent})`;
+
+  const handle = (pos, ev) => {
+    if (locked) return;
+    SFX.tap();
+    if (sel === null) { setSel(pos); return; }
+    if (sel === pos) { setSel(null); return; }
+    const next = order.slice();
+    [next[sel], next[pos]] = [next[pos], next[sel]];
+    setSel(null); setOrder(next);
+    if (next.every((v, i) => v === i)) { setDone(true); SFX.clue(); const pt = escCenter(ev); setTimeout(() => onSolve(pt), 280); }
+  };
+
+  return (
+    <div style={{ marginTop: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", marginBottom: 12, color: C.inkDim, fontSize: 11.5, fontWeight: 700 }}>
+        <Icon d={I.key} size={14} c={accent} />الهدف:
+        <span style={{ width: 92, height: 14, borderRadius: 5, background: grad, border: `1px solid ${accent}55`, display: "inline-block" }} />
+      </div>
+      {/* LTR so fragment 0 sits on the left → assembled gradient reads left→right */}
+      <div style={{ direction: "ltr", display: "flex", gap: 6, justifyContent: "center" }}>
+        {order.map((id, pos) => (
+          <button key={pos} className="k-press" onClick={(e) => handle(pos, e)} disabled={locked}
+            style={{ width: TW, height: H, padding: 0, borderRadius: 12, overflow: "hidden", position: "relative", cursor: locked ? "default" : "pointer", background: "#0b1020", border: `2px solid ${sel === pos ? accent : locked ? accent + "88" : C.line}` }}>
+            <div style={{ position: "absolute", inset: 0, backgroundImage: grad, backgroundSize: `${total}px 100%`, backgroundPositionX: `-${id * TW}px` }} />
+            <span style={{ position: "absolute", left: 0, right: 0, bottom: 4, textAlign: "center", fontSize: 11, fontWeight: 900, color: "#0b1020", textShadow: "0 1px 2px rgba(255,255,255,.55)" }}>{id + 1}</span>
+            {sel === pos && <span style={{ position: "absolute", top: 3, left: 0, right: 0, textAlign: "center", fontSize: 13, color: "#0b1020", fontWeight: 900 }}>↕</span>}
+          </button>
+        ))}
+      </div>
+      <div style={{ textAlign: "center", marginTop: 10, fontSize: 11.5, color: C.inkDim }}>{locked ? "اكتمل المفتاح!" : sel === null ? "اختر قطعةً لتبديلها" : "اختر القطعة الأخرى للتبديل"}</div>
+    </div>
+  );
+}
+
+// (2) CIPHER — decode a row of symbols into a word using the legend, by tapping
+//     letters in order. No multiple-choice: the player derives the answer.
+function CipherPuzzle({ puzzle, accent, solved, onSolve, onWrong }) {
+  const ans = puzzle.answer;
+  const [built, setBuilt] = useState([]);
+  const [done, setDone] = useState(false);
+  const locked = done || solved;
+  const full = built.length >= ans.length;
+
+  const tap = (ch, ev) => {
+    if (locked || full) return;
+    SFX.letter();
+    const next = [...built, ch];
+    setBuilt(next);
+    if (next.length === ans.length) {
+      if (next.join("") === ans) { setDone(true); SFX.clue(); const pt = escCenter(ev); setTimeout(() => onSolve(pt), 220); }
+      else { onWrong(); setTimeout(() => setBuilt([]), 480); }
+    }
+  };
+
+  return (
+    <div style={{ marginTop: 16 }}>
+      <Panel style={{ padding: "10px 12px", marginBottom: 12, background: "rgba(150,170,220,0.05)" }}>
+        <div style={{ fontSize: 11, fontWeight: 800, color: C.inkDim, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}><Icon d={I.fingerprint} size={14} c={accent} />جدول الرموز</div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+          {puzzle.legend.map(([sym, ch]) => (
+            <div key={sym} style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 9px", borderRadius: 9, background: `${accent}12`, border: `1px solid ${accent}33` }}>
+              <span style={{ fontSize: 17 }}>{sym}</span><span style={{ color: C.inkFaint, fontSize: 13 }}>=</span><span style={{ fontSize: 15, fontWeight: 900, color: accent }}>{ch}</span>
+            </div>
+          ))}
+        </div>
+      </Panel>
+      <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 4 }}>
+        {puzzle.code.map((sym, i) => <div key={i} style={{ width: 46, height: 46, borderRadius: 11, display: "grid", placeItems: "center", fontSize: 22, background: "rgba(150,170,220,0.06)", border: `1px solid ${C.line}` }}>{sym}</div>)}
+      </div>
+      <div style={{ textAlign: "center", color: C.inkFaint, fontSize: 17, lineHeight: 1 }}>↓</div>
+      <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 4 }}>
+        {Array.from({ length: ans.length }).map((_, i) => <div key={i} style={{ width: 46, height: 54, borderRadius: 11, display: "grid", placeItems: "center", fontSize: 22, fontWeight: 900, color: accent, background: "rgba(150,170,220,0.06)", border: `1.5px solid ${built[i] ? accent : C.line}` }}>{built[i] || ""}</div>)}
+      </div>
+      <div style={{ display: "flex", gap: 9, justifyContent: "center", flexWrap: "wrap", marginTop: 14 }}>
+        {puzzle.pool.map((ch) => <button key={ch} className="k-press" disabled={locked || full} onClick={(e) => tap(ch, e)}
+          style={{ width: 50, height: 50, borderRadius: 12, fontSize: 20, fontWeight: 900, fontFamily: "inherit", cursor: "pointer", color: C.ink, background: "rgba(150,170,220,0.07)", border: `1px solid ${C.line}`, opacity: (locked || full) ? 0.5 : 1 }}>{ch}</button>)}
+      </div>
+      {built.length > 0 && !locked && <button className="k-press" onClick={() => { SFX.tap(); setBuilt([]); }} style={{ display: "block", margin: "12px auto 0", background: "none", border: "none", color: C.inkDim, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>مسح</button>}
+    </div>
+  );
+}
+
+// (3) PATTERN — reproduce a shown sequence of symbols by tapping the pool in
+//     the exact order. A wrong tap resets the attempt (with shake feedback).
+function PatternPuzzle({ puzzle, accent, solved, onSolve, onWrong }) {
+  const ans = puzzle.answer;
+  const [built, setBuilt] = useState([]);
+  const [done, setDone] = useState(false);
+  const locked = done || solved;
+
+  const tap = (sym, ev) => {
+    if (locked) return;
+    if (sym === ans[built.length]) {
+      SFX.tick();
+      const next = [...built, sym];
+      setBuilt(next);
+      if (next.length === ans.length) { setDone(true); SFX.clue(); const pt = escCenter(ev); setTimeout(() => onSolve(pt), 220); }
+    } else { onWrong(); setBuilt([]); }
+  };
+
+  return (
+    <div style={{ marginTop: 16 }}>
+      <div style={{ fontSize: 11.5, fontWeight: 800, color: C.inkDim, marginBottom: 8, textAlign: "center" }}>النمط المطلوب</div>
+      <div style={{ display: "flex", gap: 7, justifyContent: "center", flexWrap: "wrap", marginBottom: 14 }}>
+        {puzzle.show.map((s, i) => <div key={i} style={{ width: 42, height: 42, borderRadius: 10, display: "grid", placeItems: "center", fontSize: 22, background: `${accent}10`, border: `1px solid ${accent}33`, color: accent }}>{s}</div>)}
+      </div>
+      <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 14 }}>
+        {ans.map((_, i) => <div key={i} style={{ width: 34, height: 34, borderRadius: 9, display: "grid", placeItems: "center", fontSize: 18, background: "rgba(150,170,220,0.06)", border: `1.5px solid ${built[i] ? accent : C.line}`, color: accent }}>{built[i] || ""}</div>)}
+      </div>
+      <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+        {puzzle.pool.map((s) => <button key={s} className="k-press" disabled={locked} onClick={(e) => tap(s, e)}
+          style={{ width: 56, height: 56, borderRadius: 14, fontSize: 26, fontFamily: "inherit", cursor: "pointer", color: accent, background: "rgba(150,170,220,0.07)", border: `1px solid ${C.line}`, opacity: locked ? 0.5 : 1 }}>{s}</button>)}
+      </div>
+    </div>
+  );
+}
+
+// (4) SPATIAL — rotate each shape (tap = +90°) until they all point upright.
+function SpatialPuzzle({ puzzle, accent, solved, onSolve, onWrong }) {
+  const n = puzzle.count || 4;
+  const [rots, setRots] = useState(() => Array.from({ length: n }, () => (1 + Math.floor(Math.random() * 3)) * 90)); // 90/180/270, never upright at start
+  const [done, setDone] = useState(false);
+  const locked = done || solved;
+  const aligned = rots.filter((r) => r % 360 === 0).length;
+
+  const rotate = (i, ev) => {
+    if (locked) return;
+    SFX.spin();
+    const next = rots.slice(); next[i] = (next[i] + 90) % 360; setRots(next);
+    if (next.every((r) => r % 360 === 0)) { setDone(true); SFX.clue(); const pt = escCenter(ev); setTimeout(() => onSolve(pt), 240); }
+  };
+
+  return (
+    <div style={{ marginTop: 16 }}>
+      <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+        {rots.map((r, i) => {
+          const up = r % 360 === 0;
+          return (
+            <button key={i} className="k-press" onClick={(e) => rotate(i, e)} disabled={locked}
+              style={{ width: 72, height: 72, borderRadius: 16, display: "grid", placeItems: "center", cursor: locked ? "default" : "pointer", background: up ? `${accent}1c` : "rgba(150,170,220,0.06)", border: `2px solid ${up ? accent : C.line}`, transition: "border-color .2s, background .2s" }}>
+              <div style={{ transform: `rotate(${r}deg)`, transition: "transform .25s cubic-bezier(.2,.9,.2,1)", display: "grid", placeItems: "center" }}>
+                <Icon d={I.key} size={34} c={up ? accent : C.inkDim} />
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ textAlign: "center", marginTop: 12, fontSize: 11.5, color: C.inkDim }}>{locked ? "تحاذت جميعها!" : `استقام ${aligned} من ${n}`}</div>
+    </div>
+  );
+}
+
+// (5) FINAL — combine the clues gathered along the chain into the door code,
+//     entered on the keypad. Solving it triggers the Escape state upstream.
+function FinalPuzzle({ puzzle, accent, inventory, solved, onSolve, onWrong }) {
+  const ans = String(puzzle.answer);
+  const [pad, setPad] = useState("");
+  const [done, setDone] = useState(false);
+  const locked = done || solved;
+
+  const submit = (ev) => {
+    if (locked) return;
+    if (pad === ans) { setDone(true); onSolve(escCenter(ev)); }
+    else { onWrong(); setTimeout(() => setPad(""), 480); }
+  };
+
+  return (
+    <div style={{ marginTop: 16 }}>
+      <Panel style={{ padding: "11px 13px", marginBottom: 14, background: `${accent}0c`, border: `1px solid ${accent}33` }}>
+        <div style={{ fontSize: 11.5, fontWeight: 800, color: accent, marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}><Icon d={I.bag} size={14} c={accent} />اجمع أدلّتك</div>
+        <div style={{ fontSize: 12.5, color: C.inkDim, lineHeight: 1.7 }}>{puzzle.clue}</div>
+        {inventory && inventory.length > 0 && (
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+            {inventory.map((it) => <span key={it} style={{ fontSize: 10.5, fontWeight: 700, padding: "3px 8px", borderRadius: 7, background: `${accent}14`, color: accent, border: `1px solid ${accent}33` }}>{it}</span>)}
+          </div>
+        )}
+      </Panel>
+      <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
+        {Array.from({ length: ans.length }).map((_, i) => <div key={i} style={{ width: 42, height: 52, borderRadius: 11, display: "grid", placeItems: "center", fontSize: 22, fontWeight: 900, color: accent, background: "rgba(150,170,220,0.06)", border: `1.5px solid ${pad[i] ? accent : C.line}` }}>{pad[i] || ""}</div>)}
+      </div>
+      <EscKeypad accent={accent} value={pad} setValue={setPad} maxLen={ans.length} onSubmit={submit} disabled={locked} />
+    </div>
+  );
+}
+
+// (2b) KEYBOX — use a held item (the Copper Key) to open a box, then deduce a
+//      4-digit passcode from the text slips inside and enter it on the keypad.
+function KeyBoxPuzzle({ puzzle, accent, inventory, solved, onSolve, onWrong }) {
+  const ans = String(puzzle.answer);
+  const hasKey = !puzzle.useItem || (inventory && inventory.includes(puzzle.useItem));
+  const [open, setOpen] = useState(false);
+  const [pad, setPad] = useState("");
+  const [done, setDone] = useState(false);
+  const locked = done || solved;
+
+  const useKey = () => { if (!hasKey || open) return; SFX.reward(); setOpen(true); };
+  const submit = (ev) => {
+    if (locked) return;
+    if (pad === ans) { setDone(true); onSolve(escCenter(ev)); }
+    else { onWrong(); setTimeout(() => setPad(""), 480); }
+  };
+
+  return (
+    <div style={{ marginTop: 16 }}>
+      {!open ? (
+        <div style={{ textAlign: "center" }}>
+          <div style={{ display: "grid", placeItems: "center", width: 96, height: 96, margin: "0 auto 14px", borderRadius: 20, background: `${accent}14`, border: `1px solid ${accent}44` }}>
+            <Icon d={I.lock} size={44} c={accent} />
+          </div>
+          <div style={{ fontSize: 12.5, color: C.inkDim, marginBottom: 14, lineHeight: 1.7 }}>
+            {hasKey ? "الصندوق مقفل. استخدم المفتاح النحاسي من حقيبتك لفتحه." : `تحتاج «${puzzle.useItem}» في حقيبتك لفتح هذا الصندوق.`}
+          </div>
+          <GoldBtn onClick={useKey} disabled={!hasKey} style={{ padding: "13px 22px", opacity: hasKey ? 1 : 0.5 }}>
+            <Icon d={I.key} size={16} c="#1c1407" /> استخدم {puzzle.useItem}
+          </GoldBtn>
+        </div>
+      ) : (
+        <div className="k-fade">
+          <Panel style={{ padding: "11px 13px", marginBottom: 14, background: `${accent}0c`, border: `1px solid ${accent}33` }}>
+            <div style={{ fontSize: 11.5, fontWeight: 800, color: accent, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}><Icon d={I.unlock} size={14} c={accent} />انفتح الصندوق — القصاصات بالداخل</div>
+            <div style={{ display: "grid", gap: 6 }}>
+              {puzzle.hints.map((h, i) => <div key={i} style={{ fontSize: 12.5, color: C.inkDim, lineHeight: 1.7 }}>{h}</div>)}
+            </div>
+          </Panel>
+          <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
+            {Array.from({ length: ans.length }).map((_, i) => <div key={i} style={{ width: 42, height: 52, borderRadius: 11, display: "grid", placeItems: "center", fontSize: 22, fontWeight: 900, color: accent, background: "rgba(150,170,220,0.06)", border: `1.5px solid ${pad[i] ? accent : C.line}` }}>{pad[i] || ""}</div>)}
+          </div>
+          <EscKeypad accent={accent} value={pad} setValue={setPad} maxLen={ans.length} onSubmit={submit} disabled={locked} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// (3b) RIDDLE — type the answer word into a text field. Normalised compare
+//      (trim, unify alef forms, drop a leading "ال", strip spaces) vs accepted answers.
+function RiddlePuzzle({ puzzle, accent, solved, onSolve, onWrong }) {
+  const [val, setVal] = useState("");
+  const [done, setDone] = useState(false);
+  const locked = done || solved;
+  const accept = puzzle.accept || [puzzle.answer];
+  const norm = (s) => (s || "").trim().replace(/[إأآا]/g, "ا").replace(/^ال/, "").replace(/\s+/g, "");
+
+  const submit = (ev) => {
+    if (locked || !val.trim()) return;
+    if (accept.some((a) => norm(a) === norm(val))) { setDone(true); onSolve(escCenter(ev)); }
+    else { onWrong(); setVal(""); }
+  };
+
+  return (
+    <div style={{ marginTop: 16 }}>
+      <div style={{ display: "grid", placeItems: "center", width: 64, height: 64, margin: "0 auto 14px", borderRadius: 18, background: `${accent}14`, border: `1px solid ${accent}44` }}>
+        <Icon d={I.fingerprint} size={30} c={accent} />
+      </div>
+      <input value={val} disabled={locked} dir="rtl" placeholder="اكتب الإجابة هنا…"
+        onChange={(e) => setVal(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter") submit(e); }}
+        style={{ width: "100%", padding: "14px 16px", borderRadius: 13, fontSize: 17, fontWeight: 800, fontFamily: "inherit", textAlign: "center", color: C.ink, background: "rgba(150,170,220,0.07)", border: `1.5px solid ${val ? accent : C.line}`, outline: "none" }} />
+      <GoldBtn onClick={submit} disabled={locked || !val.trim()} style={{ marginTop: 14, padding: "13px", opacity: (locked || !val.trim()) ? 0.55 : 1 }}>تأكيد الإجابة</GoldBtn>
+    </div>
+  );
+}
+
+// (4b) MATCH — click-to-toggle each gem's colour until every gem matches the
+//      target colour shown beneath it. Pure logic (no sequence to memorise).
+function MatchPuzzle({ puzzle, accent, solved, onSolve, onWrong }) {
+  const palette = puzzle.palette;
+  const targets = puzzle.targets;
+  const n = targets.length;
+  const [cur, setCur] = useState(() =>
+    // start every gem on a colour that does NOT already match its target
+    targets.map((t) => (t + 1 + Math.floor(Math.random() * (palette.length - 1))) % palette.length)
+  );
+  const [done, setDone] = useState(false);
+  const locked = done || solved;
+  const matched = cur.filter((c, i) => c === targets[i]).length;
+
+  const toggle = (i, ev) => {
+    if (locked) return;
+    SFX.tap();
+    const next = cur.slice(); next[i] = (next[i] + 1) % palette.length; setCur(next);
+    if (next.every((c, k) => c === targets[k])) { setDone(true); SFX.clue(); const pt = escCenter(ev); setTimeout(() => onSolve(pt), 240); }
+  };
+
+  return (
+    <div style={{ marginTop: 16 }}>
+      <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
+        {cur.map((c, i) => {
+          const ok = c === targets[i];
+          return (
+            <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 7 }}>
+              <button className="k-press" onClick={(e) => toggle(i, e)} disabled={locked}
+                style={{ width: 64, height: 64, borderRadius: 16, cursor: locked ? "default" : "pointer", background: palette[c], border: `3px solid ${ok ? "#fff" : "rgba(0,0,0,.25)"}`, boxShadow: ok ? `0 0 14px ${palette[c]}aa` : "inset 0 2px 8px rgba(0,0,0,.35)", display: "grid", placeItems: "center", transition: "background .2s, border-color .2s, box-shadow .2s" }}>
+                <Icon d={I.wheel} size={30} c="rgba(255,255,255,.85)" />
+              </button>
+              <span style={{ fontSize: 9, color: C.inkFaint, fontWeight: 700 }}>المطلوب</span>
+              <span style={{ width: 30, height: 14, borderRadius: 5, background: palette[targets[i]], border: ok ? `2px solid ${accent}` : `1px solid ${C.line}` }} />
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ textAlign: "center", marginTop: 12, fontSize: 11.5, color: C.inkDim }}>{locked ? "تطابقت كل الجواهر!" : `تطابق ${matched} من ${n}`}</div>
+    </div>
+  );
+}
+
+// (5b) CHOICE — final lock: pick the single correct option to operate the
+//      mechanism. A wrong pick shakes the card and disables that option; the
+//      right pick opens the door (escape is triggered upstream).
+function ChoicePuzzle({ puzzle, accent, inventory, solved, onSolve, onWrong }) {
+  const correct = puzzle.answer; // index of the right option
+  const [picked, setPicked] = useState(null);
+  const [wrongSet, setWrongSet] = useState([]);
+  const [done, setDone] = useState(false);
+  const locked = done || solved;
+
+  const choose = (i, ev) => {
+    if (locked || wrongSet.includes(i)) return;
+    if (i === correct) { setPicked(i); setDone(true); onSolve(escCenter(ev)); }
+    else { setWrongSet((w) => (w.includes(i) ? w : [...w, i])); onWrong(); }
+  };
+
+  return (
+    <div style={{ marginTop: 16 }}>
+      {puzzle.clue && (
+        <Panel style={{ padding: "10px 13px", marginBottom: 14, background: `${accent}0c`, border: `1px solid ${accent}33` }}>
+          <div style={{ fontSize: 12.5, color: C.inkDim, lineHeight: 1.7, display: "flex", alignItems: "center", gap: 8 }}><Icon d={I.eye} size={15} c={accent} />{puzzle.clue}</div>
+        </Panel>
+      )}
+      <div style={{ display: "grid", gap: 10 }}>
+        {puzzle.options.map((opt, i) => {
+          const isWrong = wrongSet.includes(i), isPicked = picked === i;
+          return (
+            <button key={i} className="k-press" onClick={(e) => choose(i, e)} disabled={locked || isWrong}
+              style={{ display: "flex", alignItems: "center", gap: 12, padding: "15px 16px", borderRadius: 14, textAlign: "right", fontFamily: "inherit", cursor: (locked || isWrong) ? "default" : "pointer", fontSize: 14.5, fontWeight: 800, color: isWrong ? C.inkFaint : C.ink,
+                background: isPicked ? `${accent}1c` : isWrong ? "rgba(232,85,80,0.08)" : "rgba(150,170,220,0.06)",
+                border: `1.5px solid ${isPicked ? accent : isWrong ? C.red + "55" : C.line}`, opacity: isWrong ? 0.6 : 1 }}>
+              <Icon d={I[isPicked ? "check" : isWrong ? "lock" : "door"]} size={18} c={isPicked ? accent : isWrong ? C.red : accent} />
+              <span style={{ flex: 1 }}>{opt}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// dispatcher: render the right mechanic for the active puzzle's `kind`.
+function PuzzleEngine({ puzzle, accent, inventory, solved, onSolve, onWrong }) {
+  if (!puzzle) return null;
+  const common = { puzzle, accent, solved, onSolve, onWrong };
+  switch (puzzle.kind) {
+    case "jigsaw":  return <JigsawPuzzle {...common} />;
+    case "cipher":  return <CipherPuzzle {...common} />;
+    case "pattern": return <PatternPuzzle {...common} />;
+    case "spatial": return <SpatialPuzzle {...common} />;
+    case "final":   return <FinalPuzzle {...common} inventory={inventory} />;
+    case "keybox":  return <KeyBoxPuzzle {...common} inventory={inventory} />;
+    case "riddle":  return <RiddlePuzzle {...common} />;
+    case "match":   return <MatchPuzzle {...common} />;
+    case "choice":  return <ChoicePuzzle {...common} inventory={inventory} />;
+    default:        return <div style={{ marginTop: 16, textAlign: "center", color: C.inkDim }}>نوع لغزٍ غير معروف.</div>;
+  }
+}
+
+function EscapeRoomPlay({ mode, p, diff, finishRound, markSeen, setScreen, addBurst, showToast }) {
+  const accent = mode.color;
+  const [roomIdx, setRoomIdx] = useState(null);   // null = Room Selection Menu
+  const [step, setStep] = useState(0);             // current puzzle index 0..4
+  const [solvedSteps, setSolvedSteps] = useState([]); // indices solved (in order)
+  const [inventory, setInventory] = useState([]);  // collected item names
+  const [shake, setShake] = useState(false);         // wrong-answer feedback (shakes the puzzle card)
+  const [showHint, setShowHint] = useState(false);
+  const [escaped, setEscaped] = useState(false);     // final escape state
+  const [showLockMsg, setShowLockMsg] = useState(null); // "you need X" banner
+  const lockRef = useRef(false);
+
+  const room = roomIdx != null ? ESCAPE_ROOMS[roomIdx] : null;
+  const puzzle = room ? room.puzzles[step] : null;
+  const total = room ? room.puzzles.length : 5;
+
+  // reset shared per-puzzle UI when the active puzzle changes. (The puzzle's own
+  // interaction state lives inside <PuzzleEngine>, which remounts via its `key`.)
+  const resetPuzzleUI = () => { setShake(false); setShowHint(false); lockRef.current = false; };
+
+  const startRoom = (idx) => {
+    setRoomIdx(idx); setStep(0); setSolvedSteps([]); setInventory([]); setEscaped(false); setShowLockMsg(null);
+    resetPuzzleUI(); SFX.nav();
+  };
+  const roomBack = () => { SFX.nav(); setRoomIdx(null); setEscaped(false); setShowLockMsg(null); };
+
+  // PROGRESSION GUARD — a puzzle is locked until its required item is held.
+  const hasItem = (name) => !name || inventory.includes(name);
+  const tryOpenStep = (i) => {
+    if (i === step) return;                 // already here
+    if (solvedSteps.includes(i)) return;    // can't replay a solved puzzle
+    const need = room.puzzles[i].needs;
+    if (!hasItem(need)) { SFX.wrong(); setShowLockMsg(`تحتاج «${need}» لفتح هذا اللغز.`); setTimeout(() => setShowLockMsg(null), 2400); return; }
+    SFX.nav(); setStep(i); resetPuzzleUI();
+  };
+
+  // confetti from a center-point (captured synchronously from the click, so it
+  // survives the setTimeout — React nullifies pooled synthetic events afterwards)
+  const burstAt = (pt) => {
+    if (!pt || settings.animQuality === "off") return;
+    addBurst({ currentTarget: { getBoundingClientRect: () => ({ left: pt.x, top: pt.y, width: 0, height: 0 }) } }, accent);
+  };
+
+  // central solve handler — grants the reward item and marks the step solved.
+  // It does NOT auto-advance: the player taps the explicit "Next Puzzle" button
+  // (rendered below) so progression is always visible and never gets stuck.
+  // `pt` is an optional {x,y} screen point for the confetti burst.
+  const onSolve = (pt) => {
+    if (lockRef.current || !puzzle) return;   // guard: no active puzzle / double-solve
+    lockRef.current = true;
+    SFX.clue(); burstAt(pt);
+
+    // 4) update inventory so the bag count grows (e.g. Copper Key 0 → 1) and the
+    //    next puzzle's lock can open. "حرية!" is the escape flag, not an item.
+    const reward = puzzle.reward;
+    if (reward && reward !== "حرية!") {
+      setInventory((inv) => (inv.includes(reward) ? inv : [...inv, reward]));
+    }
+    setSolvedSteps((s) => (s.includes(step) ? s : [...s, step]));
+  };
+
+  // advance to the next puzzle (or trigger Escape after the last one). Driven by
+  // the "Next Puzzle" / "Open the door" button shown once the step is solved.
+  const goNext = () => {
+    const nextIdx = step + 1;
+    // only advance when there genuinely is a next puzzle; clearing the last one
+    // (or any missing target) triggers Escape — never load a 6th puzzle.
+    if (nextIdx >= total || !room.puzzles[nextIdx]) {
+      setEscaped(true); SFX.win();
+    } else {
+      SFX.nav(); setStep(nextIdx); resetPuzzleUI();
+    }
+  };
+  // wrong-answer feedback for the active puzzle. Puzzle components call this on a
+  // mistake; it shakes the card. (lockRef is only held during a successful solve,
+  // so clearing it here is a harmless no-op in the normal mistake path.)
+  const onWrong = () => { SFX.wrong(); setShake(true); setTimeout(() => { setShake(false); lockRef.current = false; }, 480); };
+
+  const finish = () => finishRound(
+    solvedSteps.length, total,
+    { roomEscaped: escaped, bonusGem: escaped ? 3 : 0, bonusCoin: escaped ? 220 : 0, scoreMul: 1.5, headline: escaped ? "هروبٌ ناجح!" : "بقيت محتجزاً" }
+  );
+
+  // ============ ROOM SELECTION MENU ============
+  if (roomIdx == null) return (
+    <div className="k-fade" style={{ padding: 16 }}>
+      <Header title="غرف الهروب" onBack={() => setScreen("hub")} icon="door" color={accent} />
+      <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 14, color: C.inkDim, fontSize: 12.5 }}><Icon d={I.door} size={16} c={accent} />اختر غرفةً لتبدأ — 5 ألغاز متسلسلة لكل غرفة · {ESCAPE_ROOMS.length} غرف</div>
+      <div style={{ display: "grid", gap: 10 }}>
+        {ESCAPE_ROOMS.map((r, i) => (
+          <button key={r.id} className="k-card k-press" onClick={() => startRoom(i)} style={{ animationDelay: `${i * 30}ms`, display: "flex", alignItems: "center", gap: 12, padding: 14, borderRadius: 16, textAlign: "right", background: `linear-gradient(160deg,${C.card},${C.card2})`, border: `1px solid ${r.color}33`, cursor: "pointer", fontFamily: "inherit" }}>
+            <div style={{ display: "grid", placeItems: "center", width: 46, height: 46, flexShrink: 0, borderRadius: 14, background: `${r.color}1c`, border: `1px solid ${r.color}44`, color: r.color }}><Icon d={I[r.icon]} size={24} c={r.color} /></div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 3 }}>
+                <span style={{ fontSize: 15.5, fontWeight: 900, color: C.ink }}>{r.title}</span>
+                <span style={{ fontSize: 9.5, fontWeight: 800, padding: "2px 7px", borderRadius: 7, background: `${r.color}18`, color: r.color, border: `1px solid ${r.color}3a` }}>{r.theme}</span>
+              </div>
+              <div style={{ fontSize: 12, color: C.inkDim, lineHeight: 1.5, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{r.intro}</div>
+              <div style={{ display: "flex", gap: 12, marginTop: 6, fontSize: 10.5, color: C.inkFaint }}>
+                <span><Icon d={I.puzzle} size={11} c={C.inkFaint} /> {r.puzzles.length} ألغاز</span>
+                <span><Icon d={I.bag} size={11} c={C.inkFaint} /> {r.puzzles.length - 1} أدوات</span>
+              </div>
+            </div>
+            <Icon d={I.arrow} size={18} c={r.color} />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  // ============ ESCAPE SCREEN (final) ============
+  if (escaped) return (
+    <div className="k-fade" style={{ padding: 22, display: "flex", flexDirection: "column", justifyContent: "center", minHeight: "100vh", textAlign: "center" }}>
+      <div className="k-pop" style={{ display: "grid", placeItems: "center", width: 92, height: 92, borderRadius: 26, margin: "0 auto", background: `radial-gradient(circle,${accent}33,transparent)`, border: `1px solid ${accent}66` }}><Icon d={I.unlock} size={46} c={accent} /></div>
+      <h2 style={{ fontSize: 25, fontWeight: 900, margin: "14px 0 4px", color: accent }}>هربت من {room.title}!</h2>
+      <Panel glow={accent} style={{ marginTop: 14, padding: 16, fontSize: 13.5, lineHeight: 1.9, color: C.inkDim }}>{room.escapeLine}</Panel>
+      <div style={{ marginTop: 14, display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+        {inventory.map((it) => <span key={it} style={{ fontSize: 11.5, fontWeight: 700, padding: "5px 11px", borderRadius: 9, background: `${accent}14`, color: accent, border: `1px solid ${accent}33`, display: "inline-flex", alignItems: "center", gap: 5 }}><Icon d={I.check} size={12} c={accent} />{it}</span>)}
+      </div>
+      <div style={{ marginTop: 12, fontSize: 12.5, color: C.inkDim }}>حللت {solvedSteps.length} من {total} ألغاز</div>
+      <GoldBtn onClick={() => { SFX.nav(); finish(); }} style={{ marginTop: 18, padding: "14px" }}>استلم المكافآت</GoldBtn>
+      <DarkBtn onClick={roomBack} style={{ marginTop: 10 }}>غرفةٌ أخرى</DarkBtn>
+    </div>
+  );
+
+  // ============ ACTIVE PUZZLE SCREEN ============
+  // 2) defensive guard: if the step somehow points past the puzzle list, escape
+  //    rather than crash on an undefined puzzle.
+  if (!puzzle) return (
+    <div className="k-fade" style={{ padding: 22, display: "flex", flexDirection: "column", justifyContent: "center", minHeight: "60vh", textAlign: "center" }}>
+      <Icon d={I.door} size={44} c={accent} style={{ margin: "0 auto" }} />
+      <div style={{ marginTop: 12, color: C.inkDim, fontSize: 14 }}>تعذّر تحميل اللغز.</div>
+      <GoldBtn onClick={() => { SFX.nav(); finish(); }} style={{ marginTop: 16 }}>إنهاء الغرفة</GoldBtn>
+      <DarkBtn onClick={roomBack} style={{ marginTop: 10 }}>غرفةٌ أخرى</DarkBtn>
+    </div>
+  );
+  const kindMeta = ESCAPE_KIND[puzzle.kind] || { label: "لغز", icon: "puzzle" };
+  const solvedNow = solvedSteps.includes(step);
+  return (
+    <div className="k-fade" style={{ padding: 16 }}>
+      {/* header: back-to-menu + progress 1/5 */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+        <IconBtn icon="arrow" onClick={roomBack} />
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 11, color: accent, fontWeight: 800, display: "flex", alignItems: "center", gap: 6 }}>
+            <Icon d={I[kindMeta.icon]} size={13} c={accent} />{kindMeta.label} · اللغز {step + 1} من {total}
+          </div>
+          <div style={{ fontSize: 16, fontWeight: 900, lineHeight: 1.3 }}>{room.title}</div>
+        </div>
+        <Icon d={I.door} size={22} c={accent} />
+      </div>
+
+      {/* PROGRESS NODES (1/5 .. 5/5) — tappable for solved/current, locked otherwise */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+        {room.puzzles.map((pz, i) => {
+          const done = solvedSteps.includes(i), cur = i === step, open = done || cur || hasItem(pz.needs);
+          return (
+            <button key={i} className="k-press" onClick={() => tryOpenStep(i)} disabled={cur}
+              style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "8px 2px", borderRadius: 11, cursor: cur ? "default" : "pointer", fontFamily: "inherit",
+                background: done ? `${accent}1c` : cur ? `${accent}10` : "rgba(150,170,220,0.05)",
+                border: `1px solid ${done ? accent + "55" : cur ? accent + "44" : C.line}` }}>
+              <Icon d={I[done ? "check" : open ? "puzzle" : "lock"]} size={15} c={done ? accent : cur ? accent : C.inkFaint} />
+              <span style={{ fontSize: 9.5, fontWeight: 800, color: done || cur ? accent : C.inkFaint }}>{i + 1}/{total}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* INVENTORY STRIP */}
+      <Panel style={{ padding: "10px 13px", marginBottom: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11.5, fontWeight: 800, color: C.inkDim, marginBottom: inventory.length ? 8 : 0 }}>
+          <Icon d={I.bag} size={15} c={accent} />الحقيبة ({inventory.length})
+        </div>
+        {inventory.length > 0 && (
+          <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+            {inventory.map((it) => <span key={it} style={{ fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 8, background: `${accent}14`, color: accent, border: `1px solid ${accent}33`, display: "inline-flex", alignItems: "center", gap: 4 }}><Icon d={I.key} size={11} c={accent} />{it}</span>)}
+          </div>
+        )}
+      </Panel>
+
+      {/* "you need X" lock banner */}
+      {showLockMsg && <Panel className="k-fade" style={{ padding: 12, marginBottom: 12, display: "flex", alignItems: "center", gap: 10, border: `1px solid ${C.red}55` }}><Icon d={I.lock} size={17} c={C.red} /><span style={{ fontSize: 13, fontWeight: 700, color: C.red }}>{showLockMsg}</span></Panel>}
+
+      {/* THE PUZZLE CARD — body rendered by the central PuzzleEngine.
+          `key` is tied to room+step so each puzzle remounts fresh on transition. */}
+      <Panel glow={accent} className={shake ? "k-wrong" : ""} style={{ padding: 20 }}>
+        <div style={{ fontSize: 12, fontWeight: 800, color: accent, marginBottom: 9 }}>{puzzle.title}</div>
+        <div style={{ fontSize: 17.5, fontWeight: 800, lineHeight: 1.7, color: C.ink }}>{puzzle.prompt}</div>
+        <PuzzleEngine key={`${roomIdx}-${step}`} puzzle={puzzle} accent={accent} inventory={inventory} solved={solvedNow} onSolve={onSolve} onWrong={onWrong} />
+      </Panel>
+
+      {/* reward preview + hint toggle */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 13, gap: 10 }}>
+        <div style={{ fontSize: 11.5, color: C.inkDim, display: "flex", alignItems: "center", gap: 6 }}>
+          <Icon d={I.gift} size={14} c={accent} />الجائزة: <b style={{ color: accent }}>{puzzle.reward === "حرية!" ? "الهروب" : puzzle.reward}</b>
+        </div>
+        {puzzle.hint && <button className="k-press" onClick={() => { SFX.tap(); setShowHint(h => !h); }} style={{ background: "none", border: `1px solid ${C.line}`, borderRadius: 10, padding: "6px 12px", fontSize: 11.5, fontWeight: 700, color: C.inkDim, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 5 }}><Icon d={I.eye} size={13} c={C.inkDim} />{showHint ? "إخفاء التلميح" : "تلميح"}</button>}
+      </div>
+      {showHint && puzzle.hint && <Panel className="k-fade" style={{ marginTop: 10, padding: 12, fontSize: 12.5, color: C.inkDim, lineHeight: 1.6, border: `1px solid ${accent}33` }}>{puzzle.hint}</Panel>}
+
+      {/* solved confirmation + explicit progression button */}
+      {solvedNow && (
+        <div className="k-fade">
+          <Panel style={{ marginTop: 12, padding: 13, display: "flex", alignItems: "center", gap: 10, border: `1px solid ${accent}55` }}>
+            <Icon d={I.unlock} size={18} c={accent} />
+            <span style={{ fontSize: 13, fontWeight: 700 }}>{puzzle.reward === "حرية!" ? "انفتح الباب الأخير!" : `أُضيف «${puzzle.reward}» إلى الحقيبة`}</span>
+          </Panel>
+          <GoldBtn onClick={goNext} style={{ marginTop: 12, padding: "15px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            {step < total - 1
+              ? <><Icon d={I.arrow} size={17} c="#1c1407" />اللغز التالي · {step + 2} من {total}</>
+              : <><Icon d={I.unlock} size={17} c="#1c1407" />افتح الباب واخرج</>}
+          </GoldBtn>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&family=Tajawal:wght@400;700;800;900&display=swap');
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -1757,6 +3042,11 @@ input::placeholder{color:#8b97b6}
 @keyframes k-burst{to{transform:translate(var(--tx),var(--ty)) scale(0);opacity:0}}
 .k-correct{animation:kco .5s}@keyframes kco{0%,100%{transform:scale(1)}40%{transform:scale(1.04)}}
 .k-wrong{animation:kwr .4s}@keyframes kwr{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+.k-combo{animation:kcombo .45s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes kcombo{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.22)}100%{transform:scale(1);opacity:1}}
+.k-delta{position:absolute;pointer-events:none;animation:kdelta 1s ease-out both}
+@keyframes kdelta{0%{opacity:0;transform:translate(-50%,6px) scale(.8)}18%{opacity:1;transform:translate(-50%,0) scale(1.12)}100%{opacity:0;transform:translate(-50%,-30px) scale(1)}}
+.k-shake-bar{animation:kshb .45s ease-in-out infinite}@keyframes kshb{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
 .k-lvfx{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;background:rgba(7,11,22,.82);backdrop-filter:blur(8px);animation:kf .3s both;pointer-events:none}
 .k-lvfx>div{animation:kp .7s cubic-bezier(.2,1.5,.4,1) both}
 .k-toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);z-index:9998;display:flex;align-items:center;gap:8px;padding:11px 18px;border-radius:14px;background:rgba(12,18,32,.96);border:1px solid;color:#eef2fb;font-weight:700;font-size:13.5px;backdrop-filter:blur(12px);animation:ktoast .3s cubic-bezier(.2,1.4,.4,1) both;max-width:90vw}
