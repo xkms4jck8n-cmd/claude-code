@@ -1,8 +1,12 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import Kingdom from "./BrainKingdom";
-import OnlineApp from "./online/OnlineApp";
+import { ErrorBoundary } from "./ErrorBoundary";
 import { initNotifications } from "./notifications";
+
+// Lazy-load the online layer so supabase-js + the multiplayer UI are split into
+// their own chunk and never block the game's first paint.
+const OnlineApp = React.lazy(() => import("./online/OnlineApp"));
 
 const container = document.getElementById("root");
 if (!container) {
@@ -11,10 +15,16 @@ if (!container) {
 
 createRoot(container).render(
   <React.StrictMode>
-    <Kingdom />
-    {/* Real-time online layer (duels, leaderboards, friends). Self-contained;
-        renders nothing until a Supabase backend is configured via env vars. */}
-    <OnlineApp />
+    {/* Game and online layer are isolated: a crash in one cannot take down the
+        other, and neither can white-screen the app. */}
+    <ErrorBoundary name="game">
+      <Kingdom />
+    </ErrorBoundary>
+    <ErrorBoundary name="online" fallback={false}>
+      <React.Suspense fallback={null}>
+        <OnlineApp />
+      </React.Suspense>
+    </ErrorBoundary>
   </React.StrictMode>
 );
 

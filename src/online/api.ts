@@ -15,7 +15,10 @@ export async function ensureSession(): Promise<string> {
   if (session?.user) return session.user.id;
   const { data, error } = await sb.auth.signInAnonymously();
   if (error) throw error;
-  return data.user!.id;
+  if (!data.user) {
+    throw new Error("تعذّر إنشاء الحساب — فعّل تسجيل الدخول المجهول في Supabase");
+  }
+  return data.user.id;
 }
 
 export async function ensureProfile(name?: string, icon?: string, color?: string): Promise<Profile> {
@@ -194,10 +197,15 @@ export async function getMatchPlayers(id: string): Promise<MatchPlayer[]> {
 
 type Unsub = () => void;
 
+// Unique suffix per subscription so two components subscribing to the "same"
+// logical stream never collide on a Supabase channel topic name.
+let _chSeq = 0;
+const chId = () => `${Date.now().toString(36)}-${_chSeq++}`;
+
 /** Live updates for a single match row + its players. */
 export function subscribeMatch(id: string, onChange: () => void): Unsub {
   const sb = requireClient();
-  const ch = sb.channel(`match:${id}`)
+  const ch = sb.channel(`match:${id}:${chId()}`)
     .on("postgres_changes", { event: "*", schema: "public", table: "matches", filter: `id=eq.${id}` }, onChange)
     .on("postgres_changes", { event: "*", schema: "public", table: "match_players", filter: `match_id=eq.${id}` }, onChange)
     .subscribe();
@@ -207,7 +215,7 @@ export function subscribeMatch(id: string, onChange: () => void): Unsub {
 /** Live notifications of friend duel invites + accepts addressed to me. */
 export function subscribeInvites(me: string, onInvite: () => void): Unsub {
   const sb = requireClient();
-  const ch = sb.channel(`invites:${me}`)
+  const ch = sb.channel(`invites:${me}:${chId()}`)
     .on("postgres_changes", { event: "*", schema: "public", table: "matches", filter: `invited=eq.${me}` }, onInvite)
     .subscribe();
   return () => { sb.removeChannel(ch); };
@@ -216,7 +224,7 @@ export function subscribeInvites(me: string, onInvite: () => void): Unsub {
 /** Live friend-graph changes (requests, accepts, removals) touching me. */
 export function subscribeFriends(_me: string, onChange: () => void): Unsub {
   const sb = requireClient();
-  const ch = sb.channel(`friends`)
+  const ch = sb.channel(`friends:${chId()}`)
     .on("postgres_changes", { event: "*", schema: "public", table: "friendships" }, onChange)
     .subscribe();
   return () => { sb.removeChannel(ch); };

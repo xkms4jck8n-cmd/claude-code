@@ -62,6 +62,10 @@ def main():
                 f.write(data)
             downloaded[woff2_url] = (fname, len(data))
             print(f"  downloaded {fname} ({len(data)//1024} KB)")
+        # Variable fonts (e.g. Cairo) reuse one woff2 across weights; always
+        # reference the file actually written to disk for this url so no
+        # @font-face points at a missing filename.
+        real_fname = downloaded[woff2_url][0]
         ur = f"\n  unicode-range: {urange.group(1).strip()};" if urange else ""
         faces.append(
             "@font-face {{\n"
@@ -71,7 +75,7 @@ def main():
             "  font-display: swap;\n"
             "  src: url(fonts/{fname}) format('woff2');{ur}\n"
             "}}".format(family=family, style=fstyle, weight=weight,
-                        fname=fname, ur=ur)
+                        fname=real_fname, ur=ur)
         )
 
     header = ("/* Self-hosted Arabic UI fonts (Cairo + Tajawal).\n"
