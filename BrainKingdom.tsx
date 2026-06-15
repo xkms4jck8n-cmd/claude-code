@@ -293,7 +293,6 @@ const isModeUnlocked = (m, p) => !m.reqLv || (p.level >= m.reqLv) || (p.modesUnl
 // the single next locked mode the player is closest to (for "what's next" motivation)
 const nextLockedMode = (p) => MODES.filter((m) => m.reqLv && !isModeUnlocked(m, p)).sort((a, b) => a.reqLv - b.reqLv)[0] || null;
 
-const TIERS = [{ name: "مبتدئ", c: C.green }, { name: "متمرّس", c: C.cyan }, { name: "متقدّم", c: C.amber }, { name: "خبير", c: C.rose }, { name: "أسطوري", c: C.red }];
 const RANKS = ["تابع المعرفة", "طالب علم", "عارف", "حكيم", "فقيه المعرفة", "سيّد الحكمة", "عقل العصر", "تاج المعرفة"];
 const rankFor = (lvl) => RANKS[Math.min(RANKS.length - 1, Math.floor((lvl - 1) / 4))];
 
@@ -431,16 +430,24 @@ const fmtJoined = (ts) => new Date(ts).toLocaleDateString("ar", { year: "numeric
 const favoriteCat = (p) => { const e = Object.entries(p.stats.mastery || {}).sort((a, b) => b[1] - a[1])[0]; return e ? catMeta(e[0]) : null; };
 
 // ============ SMART SELECTION (no-repeat, tier-aware, recency-weighted) ============
-function selectQ(pool, seen, tier, n, tierLock) {
+// STRICT difficulty selection. A round only ever contains questions whose own
+// tier (`d`) equals the selected difficulty `tier` — no cross-contamination, so
+// an Easy round can never surface an Advanced/Expert question (or vice-versa).
+// When the pool runs out of UNSEEN same-tier questions we reuse SEEN ones at the
+// same tier rather than borrowing harder/easier questions.
+function selectQ(pool, seen, tier, n) {
   if (!pool || !pool.length) return [];
-  const base = tierLock ? pool.filter((x) => x.d >= tierLock) : pool;
-  const src = base.length ? base : pool;
-  const unseen = src.filter((x) => !seen.has(x.id));
+  // questions at exactly the requested difficulty tier
+  let atTier = pool.filter((x) => x.d === tier);
+  // Edge case: a (category) pool with zero questions at this exact tier. Step DOWN
+  // first so a lower difficulty is never silently upgraded to a harder question;
+  // only if nothing easier exists do we step up.
+  if (!atTier.length) for (let t = tier - 1; t >= 1 && !atTier.length; t--) atTier = pool.filter((x) => x.d === t);
+  if (!atTier.length) for (let t = tier + 1; t <= 6 && !atTier.length; t++) atTier = pool.filter((x) => x.d === t);
+  const src = atTier.length ? atTier : pool;
   const chosen = []; const take = (arr) => { for (const it of arr) { if (chosen.length >= n) break; if (!chosen.includes(it)) chosen.push(it); } };
-  const order = [tier, tier + 1, tier - 1, tier + 2, tier - 2].filter((t) => t >= 1 && t <= 5);
-  for (const t of order) { take(shuffle(unseen.filter((x) => x.d === t))); if (chosen.length >= n) break; }
-  if (chosen.length < n) take(shuffle(unseen));
-  if (chosen.length < n) { const rec = src.filter((x) => !chosen.includes(x)); for (const t of order) { take(shuffle(rec.filter((x) => x.d === t))); if (chosen.length >= n) break; } if (chosen.length < n) take(shuffle(rec)); }
+  take(shuffle(src.filter((x) => !seen.has(x.id))));                 // unseen, same tier
+  if (chosen.length < n) take(shuffle(src.filter((x) => !chosen.includes(x)))); // reuse seen, same tier
   return chosen.slice(0, n);
 }
 
@@ -556,7 +563,9 @@ const Counter = ({ icon, val, c }) => (
     <Icon d={I[icon]} size={16} c={c} /><span style={{ fontWeight: 800, fontSize: 13.5, color: C.ink, fontVariantNumeric: "tabular-nums" }}>{val}</span>
   </div>
 );
-const TierTag = ({ d, sm }) => <span style={{ fontSize: sm ? 10 : 11, fontWeight: 800, padding: sm ? "2px 8px" : "3px 10px", borderRadius: 8, background: `${TIERS[d - 1].c}1c`, color: TIERS[d - 1].c, border: `1px solid ${TIERS[d - 1].c}44` }}>{TIERS[d - 1].name}</span>;
+// difficulty badge — always shows the OFFICIAL difficulty the player selected
+// (one of the six DIFFICULTIES), never a secondary per-question tier label.
+const DiffTag = ({ diff, sm }) => diff ? <span style={{ fontSize: sm ? 10 : 11, fontWeight: 800, padding: sm ? "2px 8px" : "3px 10px", borderRadius: 8, background: `${diff.c}1c`, color: diff.c, border: `1px solid ${diff.c}44` }}>{diff.name}</span> : null;
 // player avatar — icon + color from the profile, optional cosmetic frame from the store
 const Avatar = ({ profile, size = 40 }) => {
   const frame = AVATAR_FRAMES.find((f) => f.id === profile.frame && f.c);
@@ -939,7 +948,7 @@ export default function Kingdom() {
     let data;
     if (m.id === "choose") data = buildChooseRound(pool, p.seen, tier, m.n);
     else if (m.id === "builder") data = buildBuilderRound(pool, p.seen, tier, m.n);
-    else data = selectQ(pool, p.seen, tier, m.n, diff.tier >= 4 ? Math.max(2, diff.tier - 1) : 0);
+    else data = selectQ(pool, p.seen, tier, m.n);
     if (!data || !data.length) { showToast("لا توجد أسئلة كافية لهذه الفئة", C.red); return; }
     setLoading(true);
     setMode({ ...m, _cat: c, _diff: diff, time: Math.round((m.time || 0) * diff.timeMul) });
@@ -1432,7 +1441,7 @@ function StandardPlay({ mode, round, qi, setQi, accent, p, update, finishRound, 
       <div style={{ padding: "0 16px" }}>
         {mode.time > 0 && <div style={{ marginBottom: 12 }}><div style={{ height: 7, borderRadius: 5, background: "rgba(150,170,220,0.12)", overflow: "hidden" }}><div style={{ height: "100%", width: `${(timer / mode.time) * 100}%`, background: timer <= 4 ? C.red : accent, transition: "width 1s linear", boxShadow: `0 0 10px ${timer <= 4 ? C.red : accent}` }} /></div></div>}
         <Panel glow={accent} style={{ padding: 24, textAlign: "center", minHeight: 120, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-          <div style={{ display: "flex", justifyContent: "center", gap: 8, alignItems: "center", marginBottom: 10 }}><span style={{ fontSize: 12, color: C.inkDim }}>{qi + 1} / {round.length}</span><TierTag d={cur.d} sm /></div>
+          <div style={{ display: "flex", justifyContent: "center", gap: 8, alignItems: "center", marginBottom: 10 }}><span style={{ fontSize: 12, color: C.inkDim }}>{qi + 1} / {round.length}</span><DiffTag diff={mode._diff} sm /></div>
           <div style={{ fontSize: 21, fontWeight: 900, lineHeight: 1.6 }}>{cur.q}</div>
           {hint && <div className="k-fade" style={{ marginTop: 12, fontSize: 13, color: C.green, display: "flex", justifyContent: "center", gap: 6, alignItems: "center" }}><Icon d={I.spark} size={15} c={C.green} />يبدأ بحرف «{cur.a[0]}» — {cur.a.length} حرفاً</div>}
         </Panel>
@@ -1598,7 +1607,7 @@ function TimedPlay({ mode, round, qi, setQi, accent, finishRound, addBurst, mark
         )}
 
         <Panel glow={accent} style={{ padding: 24, textAlign: "center", minHeight: 120, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-          <div style={{ display: "flex", justifyContent: "center", gap: 8, alignItems: "center", marginBottom: 10 }}><span style={{ fontSize: 12, color: C.inkDim }}>{qi + 1} / {round.length}</span><TierTag d={cur.d} sm /></div>
+          <div style={{ display: "flex", justifyContent: "center", gap: 8, alignItems: "center", marginBottom: 10 }}><span style={{ fontSize: 12, color: C.inkDim }}>{qi + 1} / {round.length}</span><DiffTag diff={mode._diff} sm /></div>
           <div style={{ fontSize: 21, fontWeight: 900, lineHeight: 1.6 }}>{cur.q}</div>
         </Panel>
         <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
@@ -1691,7 +1700,7 @@ function BuilderPlay({ mode, round, qi, setQi, accent, p, update, finishRound, m
       <PlayHeader {...{ accent, mode, qi, total: round.length, setScreen, streak: 0 }} />
       <div style={{ padding: "0 16px" }}>
         <Panel glow={accent} style={{ padding: 20, textAlign: "center" }}>
-          <div style={{ display: "flex", justifyContent: "center", gap: 8, alignItems: "center", marginBottom: 8 }}><span style={{ fontSize: 12, color: C.inkDim }}>{qi + 1} / {round.length}</span><TierTag d={cur.d} sm /></div>
+          <div style={{ display: "flex", justifyContent: "center", gap: 8, alignItems: "center", marginBottom: 8 }}><span style={{ fontSize: 12, color: C.inkDim }}>{qi + 1} / {round.length}</span><DiffTag diff={mode._diff} sm /></div>
           <div style={{ fontSize: 18, fontWeight: 800, lineHeight: 1.6 }}>{cur.clue}</div>
         </Panel>
         <div style={{ display: "flex", justifyContent: "center", gap: 7, flexWrap: "wrap", margin: "20px 0 6px" }}>
@@ -1817,6 +1826,7 @@ function useHints(p, update, showToast) {
 
 // ============ CHALLENGE (pass-and-play multiplayer) ============
 function ChallengeSetup({ mode, playerTier, diff, seen, setScreen, markSeen }) {
+  const [cmode, setCmode] = useState("player"); // "player" (pass-and-play) | "judge" (host scores)
   const [names, setNames] = useState(["", ""]);
   const [extraQs, setExtraQs] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
@@ -1839,16 +1849,33 @@ function ChallengeSetup({ mode, playerTier, diff, seen, setScreen, markSeen }) {
     const players = names.map(n => n.trim()).filter(Boolean);
     const base = selectQ(ALL_Q, seen, diff.tier, Math.max(2, mode.n - extraQs.length));
     const all = shuffle([...extraQs, ...base]).slice(0, Math.max(extraQs.length + 2, mode.n));
-    setStarted({ players, questions: all });
+    setStarted({ players, questions: all, cmode });
   };
 
-  if (started) return <ChallengePlay {...{ players: started.players, questions: started.questions, setScreen, markSeen }} />;
+  if (started) return started.cmode === "judge"
+    ? <JudgePlay {...{ players: started.players, questions: started.questions, diff, setScreen, markSeen }} />
+    : <ChallengePlay {...{ players: started.players, questions: started.questions, diff, setScreen, markSeen }} />;
 
   const inputStyle = { width: "100%", padding: "11px 13px", borderRadius: 11, background: "rgba(150,170,220,0.08)", border: `1px solid ${C.line}`, color: C.ink, fontSize: 14, fontFamily: "inherit", outline: "none" };
   return (
     <div className="k-fade" style={{ padding: 16 }}>
       <Header title="طور التحدي" onBack={() => setScreen("hub")} icon="versus" color={C.rose} />
-      <div style={{ fontSize: 13, color: C.inkDim, marginBottom: 14 }}>لعب جماعي على جهاز واحد · بالتناوب · أدخلوا الأسماء</div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+        {[
+          { id: "player", icon: "versus", t: "وضع اللاعبين", d: "بالتناوب على جهاز واحد" },
+          { id: "judge", icon: "crown", t: "وضع الحكم", d: "حكَم يقرأ ويمنح النقاط" },
+        ].map((opt) => {
+          const on = cmode === opt.id;
+          return (
+            <button key={opt.id} className="k-press" onClick={() => { SFX.tap(); setCmode(opt.id); }} style={{ textAlign: "right", padding: 13, borderRadius: 16, cursor: "pointer", fontFamily: "inherit", background: on ? `${C.rose}1c` : "rgba(150,170,220,0.06)", border: `1.5px solid ${on ? C.rose : C.line}` }}>
+              <div style={{ display: "grid", placeItems: "center", width: 38, height: 38, borderRadius: 12, background: `${on ? C.rose : C.inkDim}1c`, marginBottom: 8 }}><Icon d={I[opt.icon]} size={20} c={on ? C.rose : C.inkDim} /></div>
+              <div style={{ fontWeight: 900, fontSize: 14, color: on ? C.ink : C.inkDim }}>{opt.t}</div>
+              <div style={{ fontSize: 10.5, color: C.inkDim, marginTop: 2, lineHeight: 1.4 }}>{opt.d}</div>
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ fontSize: 13, color: C.inkDim, marginBottom: 14 }}>{cmode === "judge" ? "الحكم يُدخل أسماء اللاعبين (٢–٦) ثم يقرأ الأسئلة ويمنح النقاط للمجيبين بشكل صحيح" : "لعب جماعي على جهاز واحد · بالتناوب · أدخلوا الأسماء"}</div>
       <div style={{ display: "grid", gap: 10 }}>
         {names.map((n, i) => (
           <div key={i} style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -1880,12 +1907,12 @@ function ChallengeSetup({ mode, playerTier, diff, seen, setScreen, markSeen }) {
           </Panel>
         )}
       </div>
-      <GoldBtn onClick={() => { SFX.nav(); start(); }} disabled={!valid} style={{ marginTop: 22, padding: "15px" }}>ابدأ التحدي ({names.filter(n => n.trim()).length} لاعبين)</GoldBtn>
+      <GoldBtn onClick={() => { SFX.nav(); start(); }} disabled={!valid} style={{ marginTop: 22, padding: "15px" }}>{cmode === "judge" ? "ابدأ الجلسة" : "ابدأ التحدي"} ({names.filter(n => n.trim()).length} لاعبين)</GoldBtn>
     </div>
   );
 }
 
-function ChallengePlay({ players, questions, setScreen, markSeen }) {
+function ChallengePlay({ players, questions, diff, setScreen, markSeen }) {
   const [turn, setTurn] = useState(0);
   const [qi, setQi] = useState(0);
   const [phase, setPhase] = useState("handoff");
@@ -1922,7 +1949,7 @@ function ChallengePlay({ players, questions, setScreen, markSeen }) {
     <div className="k-fade" style={{ padding: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
         <IconBtn icon="arrow" onClick={() => setScreen("hub")} />
-        <span style={{ fontWeight: 800, color: C.rose }}>طور التحدي</span>
+        <span style={{ fontWeight: 800, color: C.rose, display: "flex", alignItems: "center", gap: 6 }}><Icon d={I.versus} size={16} c={C.rose} />وضع اللاعبين</span>
         <span style={{ fontSize: 13, color: C.inkDim }}>سؤال {qi + 1}/{questions.length}</span>
       </div>
       <div className="k-scroll" style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 8, marginBottom: 6 }}>
@@ -1939,7 +1966,7 @@ function ChallengePlay({ players, questions, setScreen, markSeen }) {
       {(phase === "answer" || phase === "reveal") && (
         <div className="k-fade">
           <Panel glow={pc} style={{ padding: 22, textAlign: "center", minHeight: 110, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-            <div style={{ display: "flex", justifyContent: "center", gap: 8, alignItems: "center", marginBottom: 8 }}><span style={{ fontSize: 12, color: pc, fontWeight: 700 }}>{players[curPlayer]}</span><TierTag d={cur.d || 3} sm /></div>
+            <div style={{ display: "flex", justifyContent: "center", gap: 8, alignItems: "center", marginBottom: 8 }}><span style={{ fontSize: 12, color: pc, fontWeight: 700 }}>{players[curPlayer]}</span><DiffTag diff={diff} sm /></div>
             <div style={{ fontSize: 20, fontWeight: 900, lineHeight: 1.6 }}>{cur.q}</div>
           </Panel>
           <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
@@ -1993,6 +2020,114 @@ function ChallengeResult({ players, scores, setScreen }) {
       </div>
       {fastestOverall && <div style={{ textAlign: "center", marginTop: 14, fontSize: 12.5, color: C.cyan, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><Icon d={I.bolt} size={15} c={C.cyan} />أسرع لاعب: {fastestOverall.nm} ({fastestOverall.fastest.toFixed(1)}ث)</div>}
       <GoldBtn onClick={() => { SFX.nav(); setScreen("challengeSetup"); }} style={{ marginTop: 20 }}>تحدٍّ جديد</GoldBtn>
+      <DarkBtn onClick={() => setScreen("hub")} style={{ marginTop: 10 }}>الرئيسية</DarkBtn>
+    </div>
+  );
+}
+
+// ============ CHALLENGE · JUDGE MODE ============
+// A host (the judge) reads each question aloud; players answer verbally. The
+// correct answer is highlighted for the judge only. The judge taps every player
+// who answered correctly — one OR many — to award a point each, then advances.
+function JudgePlay({ players, questions, diff, setScreen, markSeen }) {
+  const [qi, setQi] = useState(0);
+  const [scores, setScores] = useState(() => players.map(() => 0));
+  const [picked, setPicked] = useState(() => new Set()); // players credited for the current question
+  const [done, setDone] = useState(false);
+  const cur = questions[qi];
+  const opts = useMemo(() => shuffle(cur.opts), [qi]); // eslint-disable-line react-hooks/exhaustive-deps
+  const isLast = qi >= questions.length - 1;
+  const pcs = [C.gold, C.cyan, C.rose, C.green, C.violet, C.amber];
+
+  const toggle = (k) => { SFX.tap(); setPicked((prev) => { const n = new Set(prev); n.has(k) ? n.delete(k) : n.add(k); return n; }); };
+  const next = () => {
+    setScores((s) => s.map((v, k) => v + (picked.has(k) ? 1 : 0)));
+    if (markSeen && cur.id) markSeen(cur.id, true);
+    if (isLast) { SFX.win(); setDone(true); }
+    else { SFX.nav(); setQi(qi + 1); setPicked(new Set()); }
+  };
+
+  if (done) return <JudgeResult {...{ players, scores, setScreen }} />;
+  return (
+    <div className="k-fade" style={{ padding: 16 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <IconBtn icon="arrow" onClick={() => setScreen("hub")} />
+        <span style={{ fontWeight: 800, color: C.rose, display: "flex", alignItems: "center", gap: 6 }}><Icon d={I.crown} size={16} c={C.rose} />وضع الحكم</span>
+        <span style={{ fontSize: 13, color: C.inkDim }}>سؤال {qi + 1}/{questions.length}</span>
+      </div>
+      {/* live standings */}
+      <div className="k-scroll" style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 8, marginBottom: 10 }}>
+        {players.map((nm, k) => <div key={k} style={{ flexShrink: 0, padding: "7px 12px", borderRadius: 11, background: "rgba(150,170,220,0.06)", border: `1px solid ${C.line}` }}><div style={{ fontSize: 11, color: C.inkDim }}>{nm}</div><div style={{ fontSize: 16, fontWeight: 900, color: pcs[k % pcs.length] }}>{scores[k]}</div></div>)}
+      </div>
+      {/* question — correct answer revealed to the judge only */}
+      <Panel glow={C.rose} style={{ padding: 20, textAlign: "center" }}>
+        <div style={{ display: "flex", justifyContent: "center", gap: 8, alignItems: "center", marginBottom: 8 }}><DiffTag diff={diff} sm /><span style={{ fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 8, background: `${C.gold}1c`, color: C.gold, border: `1px solid ${C.gold}44`, display: "inline-flex", alignItems: "center", gap: 4 }}><Icon d={I.shield} size={11} c={C.gold} />للحكم فقط</span></div>
+        <div style={{ fontSize: 20, fontWeight: 900, lineHeight: 1.6 }}>{cur.q}</div>
+      </Panel>
+      <div style={{ display: "grid", gap: 9, marginTop: 12 }}>
+        {opts.map((o, i) => {
+          const correct = o === cur.a;
+          return <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "13px 15px", borderRadius: 13, fontSize: 15.5, fontWeight: 700, background: correct ? `linear-gradient(120deg,${C.green}22,${C.green}0d)` : `linear-gradient(120deg,${C.card},${C.card2})`, border: `1.5px solid ${correct ? C.green : C.line}`, color: correct ? C.ink : C.inkDim }}><span>{o}</span>{correct && <Icon d={I.check} size={19} c={C.green} />}</div>;
+        })}
+      </div>
+      {/* award points — multi-select, one OR many correct players */}
+      <div style={{ marginTop: 18, fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", gap: 6 }}><Icon d={I.user} size={15} c={C.rose} />من أجاب إجابة صحيحة؟ <span style={{ fontWeight: 400, color: C.inkDim }}>(اختر واحداً أو أكثر)</span></div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 9, marginTop: 10 }}>
+        {players.map((nm, k) => {
+          const on = picked.has(k); const c = pcs[k % pcs.length];
+          return <button key={k} className="k-press" onClick={() => toggle(k)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "13px 14px", borderRadius: 13, cursor: "pointer", fontFamily: "inherit", fontWeight: 800, fontSize: 14.5, textAlign: "right", background: on ? `${c}22` : "rgba(150,170,220,0.06)", border: `1.5px solid ${on ? c : C.line}`, color: on ? C.ink : C.inkDim }}><span>{nm}</span><div style={{ display: "grid", placeItems: "center", width: 24, height: 24, borderRadius: 8, flexShrink: 0, background: on ? c : "transparent", border: `1.5px solid ${on ? c : C.line2}` }}>{on && <Icon d={I.check} size={15} c="#0b1020" />}</div></button>;
+        })}
+      </div>
+      <GoldBtn onClick={next} style={{ marginTop: 20, padding: "14px" }}>{isLast ? "النتائج النهائية" : `منح النقاط والتالي${picked.size ? ` (+${picked.size})` : ""}`}</GoldBtn>
+    </div>
+  );
+}
+
+function JudgeResult({ players, scores, setScreen }) {
+  const [confetti, setConfetti] = useState(true);
+  const ranked = players.map((nm, k) => ({ nm, pts: scores[k] })).sort((a, b) => b.pts - a.pts);
+  const medals = [C.gold, "#c0c7d4", "#cd7f47"];
+  const podiumOrder = [1, 0, 2]; // silver · gold · bronze for a centered podium
+  const labels = ["الفائز", "الوصيف", "المركز الثالث"];
+  useEffect(() => { SFX.win(); }, []);
+  return (
+    <div className="k-fade" style={{ padding: 16 }}>
+      {confetti && <Confetti colors={[C.gold, C.goldHi, C.cyan, C.violet, C.rose]} onDone={() => setConfetti(false)} />}
+      <div style={{ textAlign: "center", padding: "10px 0 4px", position: "relative" }}>
+        <div className="k-pop" style={{ position: "relative", display: "inline-grid", placeItems: "center", width: 84, height: 84, borderRadius: 26, background: `radial-gradient(circle,${C.gold}26,transparent)`, border: `1px solid ${C.gold}44` }}>
+          <div className="k-rays" style={{ position: "absolute", top: "50%", left: "50%", width: 200, height: 200, marginTop: -100, marginLeft: -100, background: `conic-gradient(from 0deg,${C.gold}00,${C.gold}26 25deg,${C.gold}00 50deg,${C.gold}00 130deg,${C.gold}26 160deg,${C.gold}00 190deg,${C.gold}00 300deg,${C.gold}26 330deg,${C.gold}00 360deg)`, borderRadius: "50%", WebkitMaskImage: "radial-gradient(circle, #000 28%, rgba(0,0,0,0) 66%)", maskImage: "radial-gradient(circle, #000 28%, rgba(0,0,0,0) 66%)", pointerEvents: "none" }} />
+          <Icon d={I.crown} size={46} c={C.gold} style={{ filter: `drop-shadow(0 0 12px ${C.gold}88)`, position: "relative" }} />
+        </div>
+        <h2 className="k-pop" style={{ fontSize: 24, fontWeight: 900, margin: "12px 0 2px", color: C.gold, textShadow: `0 0 24px ${C.gold}44` }}>الفائز: {ranked[0].nm}</h2>
+        <div style={{ color: C.inkDim, fontSize: 13 }}>بـ {ranked[0].pts} نقطة</div>
+      </div>
+      {/* podium — winner · runner-up · third */}
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-end", gap: 10, margin: "20px 0" }}>
+        {podiumOrder.map((pos) => { const r = ranked[pos]; if (!r) return <div key={pos} style={{ flex: 1 }} />; const h = pos === 0 ? 110 : pos === 1 ? 80 : 64; return (
+          <div key={pos} className="k-rise" style={{ flex: 1, textAlign: "center" }}>
+            {pos === 0 && <Icon d={I.crown} size={20} c={C.gold} style={{ marginBottom: 2 }} />}
+            <div style={{ display: "grid", placeItems: "center", width: 46, height: 46, borderRadius: 14, margin: "0 auto 8px", background: `${medals[pos]}22`, border: `1px solid ${medals[pos]}66`, color: medals[pos], fontWeight: 900 }}>{pos + 1}</div>
+            <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 6 }}>{r.nm}</div>
+            <div style={{ height: h, borderRadius: "12px 12px 0 0", background: `linear-gradient(180deg,${medals[pos]}33,${medals[pos]}0d)`, border: `1px solid ${medals[pos]}44`, borderBottom: "none", display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 10 }}>
+              <span style={{ fontSize: 22, fontWeight: 900, color: medals[pos] }}>{r.pts}</span><span style={{ fontSize: 10, color: C.inkDim }}>نقطة</span>
+            </div>
+          </div>
+        ); })}
+      </div>
+      {/* full ranking */}
+      <div style={{ display: "grid", gap: 8 }}>
+        {ranked.map((r, i) => (
+          <Panel key={i} style={{ padding: 12, display: "flex", alignItems: "center", gap: 12 }} glow={i === 0 ? C.gold : null}>
+            <div style={{ display: "grid", placeItems: "center", width: 32, height: 32, borderRadius: 9, background: i < 3 ? `${medals[i]}22` : "rgba(150,170,220,0.06)", color: i < 3 ? medals[i] : C.inkDim, fontWeight: 900, fontSize: 14 }}>{i + 1}</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 800, fontSize: 14 }}>{r.nm}</div>
+              {i < 3 && <div style={{ fontSize: 11, color: C.inkDim }}>{labels[i]}</div>}
+            </div>
+            <div style={{ textAlign: "left" }}><div style={{ fontSize: 18, fontWeight: 900, color: C.gold }}>{r.pts}</div><div style={{ fontSize: 10, color: C.inkDim }}>نقطة</div></div>
+          </Panel>
+        ))}
+      </div>
+      <GoldBtn onClick={() => { SFX.nav(); setScreen("challengeSetup"); }} style={{ marginTop: 20 }}>جلسة جديدة</GoldBtn>
       <DarkBtn onClick={() => setScreen("hub")} style={{ marginTop: 10 }}>الرئيسية</DarkBtn>
     </div>
   );
@@ -2238,7 +2373,7 @@ function Profile({ p, update, setScreen, acc, playerTier, diff, showToast }) {
         <div style={{ display: "grid", placeItems: "center" }}><Avatar profile={p.profile} size={76} /></div>
         <div style={{ fontSize: 21, fontWeight: 900, marginTop: 12 }}>{p.profile.name}</div>
         <div style={{ fontSize: 12.5, color: C.inkDim, marginTop: 2 }}>{rankFor(p.level)} · المستوى {p.level}</div>
-        <div style={{ marginTop: 10, display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}><TierTag d={playerTier} /><span style={{ fontSize: 11, fontWeight: 800, padding: "3px 10px", borderRadius: 8, background: `${diff.c}1c`, color: diff.c, border: `1px solid ${diff.c}44` }}>صعوبة: {diff.name}</span></div>
+        <div style={{ marginTop: 10, display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}><span style={{ fontSize: 11, fontWeight: 800, padding: "3px 10px", borderRadius: 8, background: `${diff.c}1c`, color: diff.c, border: `1px solid ${diff.c}44` }}>الصعوبة: {diff.name}</span></div>
         <DarkBtn icon="feather" onClick={() => { setDraftName(p.profile.name); setEditing(!editing); }} style={{ marginTop: 14 }}>{editing ? "إغلاق التعديل" : "تعديل الاسم والصورة"}</DarkBtn>
       </Panel>
 
@@ -3465,7 +3600,7 @@ function DetectivePlay({ mode, p, diff, finishRound, markSeen, setScreen, addBur
         <div style={{ padding: "0 16px" }}>
           <div style={{ textAlign: "center", marginBottom: 10, fontSize: 12, color: accent, fontWeight: 700 }}>أجب بصوابٍ لتكشف الدليل {qi + 1} — والخطأُ يُضيّعه للأبد</div>
           <Panel glow={accent} style={{ padding: 22, textAlign: "center", minHeight: 110, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-            <div style={{ display: "flex", justifyContent: "center", gap: 8, alignItems: "center", marginBottom: 8 }}><TierTag d={cur.d} sm /></div>
+            <div style={{ display: "flex", justifyContent: "center", gap: 8, alignItems: "center", marginBottom: 8 }}><DiffTag diff={diff} sm /></div>
             <div style={{ fontSize: 20, fontWeight: 900, lineHeight: 1.6 }}>{cur.q}</div>
           </Panel>
           <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
@@ -3628,7 +3763,7 @@ function TowerPlay({ mode, p, diff, grantRewards, markSeen, setScreen, addBurst,
       <div style={{ padding: "0 16px" }}>
         {isBoss && <div style={{ marginBottom: 12 }}><div style={{ textAlign: "center", fontSize: 12, color: C.red, fontWeight: 800, marginBottom: 6 }}>تحدّي الزعيم — أجب بسرعة!</div><div style={{ height: 7, borderRadius: 5, background: "rgba(150,170,220,0.12)", overflow: "hidden" }}><div style={{ height: "100%", width: `${(timer / Math.max(6, Math.round(10 * diff.timeMul))) * 100}%`, background: C.red, transition: "width 1s linear" }} /></div></div>}
         <Panel glow={isBoss ? C.red : accent} style={{ padding: 24, textAlign: "center", minHeight: 120, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-          <div style={{ display: "flex", justifyContent: "center", gap: 8, alignItems: "center", marginBottom: 10 }}><TierTag d={q.d} sm /><span style={{ fontSize: 11, color: C.inkDim }}>{catMeta(q.cat).name}</span></div>
+          <div style={{ display: "flex", justifyContent: "center", gap: 8, alignItems: "center", marginBottom: 10 }}><DiffTag diff={diff} sm /><span style={{ fontSize: 11, color: C.inkDim }}>{catMeta(q.cat).name}</span></div>
           <div style={{ fontSize: 21, fontWeight: 900, lineHeight: 1.6 }}>{q.q}</div>
         </Panel>
         <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
