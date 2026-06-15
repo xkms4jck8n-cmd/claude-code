@@ -1,6 +1,7 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import Kingdom from "./BrainKingdom";
+import OnlineApp from "./online/OnlineApp";
 import { initNotifications } from "./notifications";
 
 const container = document.getElementById("root");
@@ -11,6 +12,9 @@ if (!container) {
 createRoot(container).render(
   <React.StrictMode>
     <Kingdom />
+    {/* Real-time online layer (duels, leaderboards, friends). Self-contained;
+        renders nothing until a Supabase backend is configured via env vars. */}
+    <OnlineApp />
   </React.StrictMode>
 );
 

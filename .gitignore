@@ -7,6 +7,11 @@ node_modules/
 dist/
 *.tsbuildinfo
 
+# Local secrets / env (Supabase keys) — keep .env.example, ignore real envs
+.env
+.env.local
+.env.*.local
+
 # Logs
 npm-debug.log*
 yarn-debug.log*
