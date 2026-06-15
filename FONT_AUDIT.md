@@ -2,7 +2,7 @@
 
 ## Summary
 
-The app's Arabic text failed to render on iOS (showing as `????` / missing‑glyph
+The app's Arabic text failed to render on iOS (showing as `Q-mark placeholders` / missing‑glyph
 boxes) because the UI fonts were pulled from a **remote Google Fonts `@import`**,
 which WKWebView blocks under the `capacitor://localhost` app origin and which also
 fails with no network. **Fixed by self‑hosting the fonts in the app bundle and adding
@@ -40,7 +40,7 @@ Problems:
 | Arabic‑capable bundled font | **none** ❌ → added |
 | `backdrop-filter` without `-webkit-` | 3 occurrences ❌ → prefixed |
 
-Conclusion: the `????` was a **font availability** failure, not an encoding failure.
+Conclusion: the `Q-mark placeholders` was a **font availability** failure, not an encoding failure.
 
 ---
 

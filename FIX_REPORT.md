@@ -3,7 +3,7 @@
 _Date: 2026-06-15 · Framework: web React (React DOM) wrapped with Capacitor 7_
 
 This report covers the second pass: fixing the broken Main‑Menu UI, the Arabic
-"????" text, and implementing the full local‑notification system, then hardening
+"Q-mark placeholders" text, and implementing the full local‑notification system, then hardening
 for App Store submission.
 
 ---
@@ -11,7 +11,7 @@ for App Store submission.
 ## Root‑cause analysis (what was actually wrong)
 
 Both visible symptoms — **(1) broken menu / empty boxes / missing labels** and
-**(2) Arabic shown as `????`** — had a **single shared root cause**:
+**(2) Arabic shown as `Q-mark placeholders`** — had a **single shared root cause**:
 
 > The app loaded its Arabic UI fonts (Cairo + Tajawal) from a **remote
 > `@import url('https://fonts.googleapis.com/...')`** at the top of its CSS.
@@ -19,7 +19,7 @@ Both visible symptoms — **(1) broken menu / empty boxes / missing labels** and
 > origin (not `https://`), and WKWebView **blocks that cross‑origin remote font
 > request** (and it also fails with no network). With the web font missing and
 > the font‑family stack ending in a bare `sans-serif`, glyphs fell back
-> inconsistently — Arabic rendered as missing‑glyph boxes/`????`.
+> inconsistently — Arabic rendered as missing‑glyph boxes/`Q-mark placeholders`.
 
 Why it looked like a *layout* bug: the menu cards (Daily Missions, Shop, Challenge,
 Current Season) draw their box with a pure‑CSS gradient (no font), so the **boxes
@@ -80,7 +80,7 @@ Added `@capacitor/local-notifications@^7.0.6`.
   scroll or clipping on any iPhone width (SE 320–375 pt through Pro Max 430 pt).
 - Spacing/alignment/sizing of cards use fl/grid `gap` + flex centering — intact.
 
-### 2. Arabic "????" ✅ FIXED
+### 2. Arabic "Q-mark placeholders" ✅ FIXED
 - **Encoding verified UTF‑8 end‑to‑end:** source file is UTF‑8; `index.html` declares
   `<meta charset="UTF-8">`; the production bundle stores non‑ASCII as `\uXXXX` escapes
   (data‑lossless). The corruption was **font**, not encoding.

@@ -8,7 +8,7 @@ the single UI reference).
 
 | Issue | Root cause | Fix | Status |
 |-------|------------|-----|--------|
-| Arabic rendered as `????` / boxes; menu cards looked empty | UI fonts loaded via a **remote Google Fonts `@import`**, blocked by WKWebView under the `capacitor://` origin and offline | Self-hosted Cairo + Tajawal (`public/fonts/`, 12 woff2), 18 local `@font-face`; removed the remote import | Fixed (prior pass) |
+| Arabic rendered as `Q-mark placeholders` / boxes; menu cards looked empty | UI fonts loaded via a **remote Google Fonts `@import`**, blocked by WKWebView under the `capacitor://` origin and offline | Self-hosted Cairo + Tajawal (`public/fonts/`, 12 woff2), 18 local `@font-face`; removed the remote import | Fixed (prior pass) |
 | **Bold Arabic weights fell back unexpectedly** | 6 Cairo `@font-face` rules pointed at **non-existent** `Cairo-700/800/900` files (variable-font dedup bug) | Repointed to the single Cairo variable file (covers all weights); fixed the generator | **Fixed this pass** |
 | Weak fallback could mis-render Arabic | Stack ended in bare `sans-serif` | Hardened to `'Tajawal','Cairo','Geeza Pro','Damascus','Al Nile',-apple-system,system-ui,…` (Geeza Pro = iOS built-in Arabic) | Fixed |
 | Encoding | — | Verified UTF-8 across source, bundle, and `<meta charset>`; no separate JSON/string files to mis-encode (all inline) | Verified |
