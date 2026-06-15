@@ -16,33 +16,53 @@ coexist under the same family.
 import base64
 import io
 import os
-import re
+
+from fontTools.ttLib import TTFont
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TSX = os.path.join(ROOT, "src/BrainKingdom.tsx")
 FONT_DIR = os.path.join(ROOT, "public/fonts")
 
-AR_RANGE = ("U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, "
-            "U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, "
-            "U+FE70-FE74, U+FE76-FEFC")
-LAT_RANGE = ("U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, "
-             "U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, "
-             "U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD")
-
-# (file, family, weight, subset)
+# (file, family, weight)
 FONTS = [
-    ("Cairo-400-arabic.woff2", "Cairo", "100 900", "arabic"),
-    ("Cairo-400-latin.woff2", "Cairo", "100 900", "latin"),
+    ("Cairo-400-arabic.woff2", "Cairo", "100 900"),
+    ("Cairo-400-latin.woff2", "Cairo", "100 900"),
 ]
 for w in (400, 500, 700, 800, 900):
-    FONTS.append((f"Tajawal-{w}-arabic.woff2", "Tajawal", str(w), "arabic"))
-    FONTS.append((f"Tajawal-{w}-latin.woff2", "Tajawal", str(w), "latin"))
+    FONTS.append((f"Tajawal-{w}-arabic.woff2", "Tajawal", str(w)))
+    FONTS.append((f"Tajawal-{w}-latin.woff2", "Tajawal", str(w)))
 
 
-def face(file, family, weight, subset):
-    data = open(os.path.join(FONT_DIR, file), "rb").read()
+def cmap_codepoints(path):
+    f = TTFont(path)
+    cps = set()
+    for t in f["cmap"].tables:
+        cps |= set(t.cmap.keys())
+    # control/formatting chars must never be "claimed" — they have no visible
+    # glyph and would otherwise force .notdef. Let the browser handle them.
+    cps -= {0x200C, 0x200D, 0x200E, 0x200F, 0x202A, 0x202B, 0x202C, 0x061C, 0xFEFF}
+    return cps
+
+
+def unicode_range(cps):
+    """Compact `unicode-range` covering EXACTLY the font's codepoints, so the
+    @font-face never claims a character it cannot render (which would force a
+    `?`/.notdef). Anything outside this set falls back to the system font."""
+    out = []
+    for cp in sorted(cps):
+        if out and cp == out[-1][1] + 1:
+            out[-1][1] = cp
+        else:
+            out.append([cp, cp])
+    parts = [f"U+{a:04X}" if a == b else f"U+{a:04X}-{b:04X}" for a, b in out]
+    return ", ".join(parts)
+
+
+def face(file, family, weight):
+    path = os.path.join(FONT_DIR, file)
+    data = open(path, "rb").read()
     uri = "data:font/woff2;base64," + base64.b64encode(data).decode("ascii")
-    rng = AR_RANGE if subset == "arabic" else LAT_RANGE
+    rng = unicode_range(cmap_codepoints(path))
     return (f"@font-face {{\n  font-family: '{family}';\n  font-style: normal;\n"
             f"  font-weight: {weight};\n  font-display: swap;\n"
             f"  src: url({uri}) format('woff2');\n  unicode-range: {rng};\n}}")
