@@ -3,10 +3,15 @@ require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
 platform :ios, '14.0'
 use_frameworks!
 
-# workaround to avoid Xcode caching of Pods that requires
-# Product -> Clean Build Folder after new Cordova plugins installed
-# Requires CocoaPods 1.6 or newer
-install! 'cocoapods', :disable_input_output_paths => true
+# Keep CocoaPods' generated input/output xcfilelists ENABLED (the default) so
+# Xcode's "[CP] Embed Pods Frameworks" / "[CP] Check Pods Manifest.lock" run
+# phases participate in dependency analysis and are SKIPPED when nothing changed
+# — removing the "will be run during every build" warning and enabling proper
+# incremental builds. (The upstream `:disable_input_output_paths => true`
+# workaround was only needed for projects that add/remove Cordova plugins
+# frequently; this app's plugin set is stable. If you later add Cordova plugins,
+# do a one-time Product ▸ Clean Build Folder.)
+install! 'cocoapods'
 
 def capacitor_pods
   pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'

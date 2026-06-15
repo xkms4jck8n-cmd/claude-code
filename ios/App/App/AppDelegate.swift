@@ -1,7 +1,8 @@
 import UIKit
 import Capacitor
 
-@UIApplicationMain
+// `@main` replaces `@UIApplicationMain`, which Swift 5.9 (Xcode 15/16) deprecated.
+@main
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?

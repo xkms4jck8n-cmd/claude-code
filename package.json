@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "ios:sync": "npm run build && npx cap sync ios",
-    "ios:open": "npx cap open ios"
+    "ios:open": "npx cap open ios",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@capacitor/app": "^7.0.0",
@@ -30,6 +31,7 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
+    "patch-package": "^8.0.1",
     "typescript": "^5.6.3",
     "vite": "^5.4.11"
   }
