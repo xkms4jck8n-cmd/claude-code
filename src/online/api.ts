@@ -21,10 +21,10 @@ export async function ensureSession(): Promise<string> {
   return data.user.id;
 }
 
-export async function ensureProfile(name?: string, icon?: string, color?: string): Promise<Profile> {
+export async function ensureProfile(name?: string, icon?: string, color?: string, code?: string): Promise<Profile> {
   const sb = requireClient();
   const { data, error } = await sb.rpc("ensure_profile", {
-    p_name: name ?? null, p_icon: icon ?? null, p_color: color ?? null,
+    p_name: name ?? null, p_icon: icon ?? null, p_color: color ?? null, p_code: code ?? null,
   });
   if (error) throw error;
   return data as Profile;

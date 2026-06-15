@@ -1,5 +1,14 @@
 # PERFORMANCE REPORT — Kingdom of Knowledge
 
+> **Update (Friend-ID / leaderboard integration):** the online layer was later
+> wired directly into the game's own Profile / Leaderboard / Friends screens, so
+> it can no longer be a separate lazy chunk (the game imports it eagerly). The
+> `OnlineApp-*.js` split below no longer applies; `supabase-js` + online UI are
+> part of the main bundle again (~1.46 MB / ~445 KB gzip). This was a deliberate
+> correctness trade-off (real in-game data > a ~64 KB-gzip deferral). Realtime
+> teardown, bounded polling, and the error boundaries described below still hold.
+
+
 ## Bundle (production build)
 
 | Chunk | Before this pass | After |

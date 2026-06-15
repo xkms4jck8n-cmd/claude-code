@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { OnlineProvider, useOnline } from "./useOnline";
+import { useOnline } from "./useOnline";
 import * as api from "./api";
 import { pickQuestions } from "./questions";
 import type { Profile } from "./types";
@@ -17,17 +17,10 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "friends", label: "الأصدقاء", icon: "🫂" },
 ];
 
-/** Mount this once at the app root. It renders a floating launcher + the whole
- *  online experience in an overlay, fully isolated from the offline game. */
-export default function OnlineApp() {
-  return (
-    <OnlineProvider>
-      <OnlineRoot />
-    </OnlineProvider>
-  );
-}
-
-function OnlineRoot() {
+/** The floating online launcher + overlay (duels/leaderboard/friends tabs).
+ *  Expects an <OnlineProvider> ancestor (mounted in main.tsx so the game's own
+ *  Profile/Leaderboard/Friends screens share the same session & data). */
+export default function OnlineOverlay() {
   const { configured, status, pendingInviteMatch } = useOnline();
   const [open, setOpen] = useState(false);
   if (!configured) return null; // no button until a backend is configured

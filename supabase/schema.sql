@@ -91,7 +91,8 @@ $$;
 
 create or replace function public.ensure_profile(p_name text default null,
                                                  p_icon text default null,
-                                                 p_color text default null)
+                                                 p_color text default null,
+                                                 p_code text default null)
 returns public.profiles language plpgsql security definer set search_path = public as $$
 declare
   uid uuid := auth.uid();
@@ -102,12 +103,17 @@ begin
 
   select * into prof from public.profiles where id = uid;
   if not found then
-    -- generate a unique, human-friendly player code: KOK-XXXXXX (base32-ish)
-    loop
-      code := 'KOK-' || upper(substr(translate(encode(gen_random_bytes(5),'base64'),
-                          '+/=lIO01','ABCDEFGH'), 1, 6));
-      exit when not exists (select 1 from public.profiles where player_code = code);
-    end loop;
+    -- Friend ID format: MK-####### (7 digits). Honor the client-proposed code if
+    -- it is well-formed and free; otherwise generate a unique one.
+    if p_code is not null and p_code ~ '^MK-\d{7}$'
+       and not exists (select 1 from public.profiles where player_code = p_code) then
+      code := p_code;
+    else
+      loop
+        code := 'MK-' || lpad((floor(random() * 10000000))::int::text, 7, '0');
+        exit when not exists (select 1 from public.profiles where player_code = code);
+      end loop;
+    end if;
     insert into public.profiles (id, player_code, name, icon, color)
       values (uid, code,
               coalesce(nullif(p_name,''),  'مستكشف المعرفة'),

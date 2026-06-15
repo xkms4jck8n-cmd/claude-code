@@ -6,6 +6,12 @@
 // so `tsc --noEmit` stays clean without rewriting validated game logic.
 // Runtime behavior is identical with or without this pragma.
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+// Real online systems (Supabase): real-player leaderboard + Friend-ID system.
+// These replace the former fake/generated leaderboard and friends data.
+import { useOnline } from "./online/useOnline";
+import { LeaderboardPanel } from "./online/ui/LeaderboardPanel";
+import { FriendsPanel } from "./online/ui/FriendsPanel";
+import { getLocalFriendId } from "./online/friendId";
 
 /* ==================================================================
    مملكة المعرفة · Kingdom of Knowledge  —  v5.0
@@ -451,8 +457,10 @@ const dailyMissions = (p) => {
 };
 const claimableMissions = (p) => dailyMissions(p).filter((ms) => ms.cur >= ms.goal && !p.daily.claimedM.has(ms.id)).length;
 
-// dynamic global rank — improves (decreases) as the player earns XP and answers; "—" until first round
-const globalRank = (p) => (p.stats.rounds ? Math.max(1, 25000 - p.level * 150 - p.stats.right * 4 - Math.floor(p.seasonXp / 5)) : 0);
+// Real global rank comes from the online leaderboard screen (Supabase). The Hub
+// no longer fabricates a rank number, so 0 → shown as "—" until the player is
+// actually ranked among real players.
+const globalRank = (_p) => 0;
 const fmtPlaytime = (ms) => { const h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000); return h > 0 ? `${h}س ${m}د` : `${m}د`; };
 const fmtJoined = (ts) => new Date(ts).toLocaleDateString("ar", { year: "numeric", month: "long", day: "numeric" });
 const favoriteCat = (p) => { const e = Object.entries(p.stats.mastery || {}).sort((a, b) => b[1] - a[1])[0]; return e ? catMeta(e[0]) : null; };
@@ -1175,7 +1183,8 @@ export default function Kingdom() {
           {screen === "profile" && <Profile {...{ p, update, setScreen: go, acc, playerTier, diff, showToast }} />}
           {screen === "settings" && <Settings {...{ settings, setSettings, update, p, setScreen: go, showToast }} />}
           {screen === "achievements" && <Achievements {...{ p, setScreen: go }} />}
-          {screen === "leaderboard" && <Leaderboard {...{ p, setScreen: go }} />}
+          {screen === "leaderboard" && <Leaderboard {...{ setScreen: go }} />}
+          {screen === "friends" && <FriendsScreen {...{ setScreen: go }} />}
           {screen === "missions" && <Missions {...{ p, update, setScreen: go, begin, showToast }} />}
           {screen === "store" && <Store {...{ p, update, setScreen: go, showToast }} />}
           {screen === "seasons" && <Seasons {...{ p, update, setScreen: go, showToast }} />}
@@ -2607,6 +2616,8 @@ function Profile({ p, update, setScreen, acc, playerTier, diff, showToast }) {
   const [draftName, setDraftName] = useState(p.profile.name);
   const fav = favoriteCat(p);
   const rank = globalRank(p);
+  const online = useOnline();
+  const friendId = (online.me && online.me.player_code) || getLocalFriendId();
   const saveProfile = () => {
     const name = draftName.trim().slice(0, 24);
     if (!name) { showToast("أدخل اسماً صالحاً", C.red); return; }
@@ -2630,6 +2641,16 @@ function Profile({ p, update, setScreen, acc, playerTier, diff, showToast }) {
         <div style={{ fontSize: 12.5, color: C.inkDim, marginTop: 2 }}>{rankFor(p.level)} · المستوى {p.level}</div>
         <div style={{ marginTop: 10, display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}><span style={{ fontSize: 11, fontWeight: 800, padding: "3px 10px", borderRadius: 8, background: `${diff.c}1c`, color: diff.c, border: `1px solid ${diff.c}44` }}>الصعوبة: {diff.name}</span></div>
         <DarkBtn icon="feather" onClick={() => { setDraftName(p.profile.name); setEditing(!editing); }} style={{ marginTop: 14 }}>{editing ? "إغلاق التعديل" : "تعديل الاسم والصورة"}</DarkBtn>
+      </Panel>
+
+      {/* Friend ID — unique per account; share it so others can add you as a friend */}
+      <Panel glow={C.cyan} style={{ padding: 16, marginTop: 12 }}>
+        <div style={{ fontSize: 12.5, color: C.inkDim, marginBottom: 6 }}>معرّف الصداقة (Friend ID)</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ flex: 1, fontWeight: 900, fontSize: 21, letterSpacing: ".08em", color: C.gold }}>{friendId}</div>
+          <DarkBtn icon="copy" onClick={() => { try { navigator.clipboard?.writeText(friendId); showToast("تم نسخ المعرّف", C.green); } catch (e) { showToast("تعذّر النسخ", C.red); } }} style={{ width: "auto", padding: "10px 16px" }}>نسخ</DarkBtn>
+        </div>
+        <DarkBtn icon="user" onClick={() => setScreen("friends")} style={{ marginTop: 12 }}>إضافة صديق · قائمة الأصدقاء</DarkBtn>
       </Panel>
 
       {editing && (
@@ -2833,33 +2854,24 @@ function Achievements({ p, setScreen }) {
   );
 }
 
-// ============ LEADERBOARD ============
-function Leaderboard({ p, setScreen }) {
-  const [tab, setTab] = useState("global");
-  const bots = useMemo(() => {
-    const names = ["أبو فهد", "نورة", "خالد العتيبي", "ريم", "سلطان", "مها", "عبدالله", "لمى", "تركي", "جواهر", "يوسف", "دانة", "فيصل", "هند", "ماجد"];
-    return names.map((nm, i) => ({ nm, score: 9800 - i * 540 + (i % 2 ? 120 : 0), lvl: 40 - i * 2 }));
-  }, []);
-  const me = { nm: p.profile.name, score: (p.seasonXp || 0) + p.level * 100 + (p.stats.right || 0) * 2, lvl: p.level, me: true };
-  const list = tab === "friends" ? bots.slice(0, 6) : bots;
-  const ranked = [...list, me].sort((a, b) => b.score - a.score);
-  const medals = [C.gold, "#c0c7d4", "#cd7f47"];
+// ============ LEADERBOARD (REAL players only — no fake/generated data) ============
+// Renders the live Supabase-backed leaderboard (global / weekly / friends).
+// When no real players are ranked yet it shows "No players ranked yet".
+function Leaderboard({ setScreen }) {
   return (
     <div className="k-fade" style={{ padding: 16 }}>
       <Header title="لوحة المتصدّرين" onBack={() => setScreen("hub")} icon="rank" color={C.violet} />
-      <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-        {[["global", "العالم"], ["friends", "الأصدقاء"]].map(([v, lbl]) => <button key={v} className="k-press" onClick={() => { SFX.tap(); setTab(v); }} style={{ flex: 1, padding: "10px", borderRadius: 12, background: tab === v ? `${C.violet}22` : "rgba(150,170,220,0.06)", border: `1.5px solid ${tab === v ? C.violet : C.line}`, color: tab === v ? C.violet : C.inkDim, fontWeight: 800, fontSize: 13, fontFamily: "inherit", cursor: "pointer" }}>{lbl}</button>)}
-      </div>
-      <div style={{ display: "grid", gap: 8 }}>
-        {ranked.map((r, i) => (
-          <Panel key={i} className="k-card" style={{ animationDelay: `${i * 20}ms`, padding: 12, display: "flex", alignItems: "center", gap: 12, border: r.me ? `1.5px solid ${C.gold}` : `1px solid ${C.line}` }} glow={i < 3 ? medals[i] : null}>
-            <div style={{ display: "grid", placeItems: "center", width: 32, height: 32, borderRadius: 9, background: i < 3 ? `${medals[i]}22` : "rgba(150,170,220,0.06)", color: i < 3 ? medals[i] : C.inkDim, fontWeight: 900, fontSize: 14 }}>{i + 1}</div>
-            <div style={{ display: "grid", placeItems: "center", width: 38, height: 38, borderRadius: 11, background: r.me ? `linear-gradient(135deg,${C.goldHi},${C.goldDeep})` : "rgba(150,170,220,0.06)" }}><Icon d={r.me ? I.crown : I.user} size={19} c={r.me ? "#1c1407" : C.inkDim} /></div>
-            <div style={{ flex: 1 }}><div style={{ fontWeight: 800, fontSize: 14, color: r.me ? C.gold : C.ink }}>{r.nm}</div><div style={{ fontSize: 11, color: C.inkDim }}>المستوى {r.lvl}</div></div>
-            <div style={{ textAlign: "left" }}><div style={{ fontSize: 16, fontWeight: 900, color: C.gold }}>{r.score.toLocaleString("en")}</div><div style={{ fontSize: 10, color: C.inkDim }}>نقطة</div></div>
-          </Panel>
-        ))}
-      </div>
+      <LeaderboardPanel />
+    </div>
+  );
+}
+
+// ============ FRIENDS (REAL Friend-ID system — add / requests / list) ============
+function FriendsScreen({ setScreen }) {
+  return (
+    <div className="k-fade" style={{ padding: 16 }}>
+      <Header title="الأصدقاء" onBack={() => setScreen("hub")} icon="user" color={C.cyan} />
+      <FriendsPanel />
     </div>
   );
 }

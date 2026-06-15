@@ -26,6 +26,10 @@ export function LeaderboardPanel() {
         : scope === "weekly" ? await api.leaderboardWeekly()
         : await api.leaderboardFriends();
       setRows(data);
+    } catch {
+      // Not configured / transient error → show the real "no players" empty state
+      // rather than crashing. Never displays fake data.
+      setRows([]);
     } finally { setLoading(false); }
   }, [scope]);
 
@@ -51,7 +55,7 @@ export function LeaderboardPanel() {
       </div>
 
       {loading ? <Spinner label="جارٍ تحميل الترتيب…" /> : rows.length === 0 ? (
-        <Empty icon="🏆" text="لا توجد بيانات بعد — العب مبارزة لتظهر في الترتيب!" />
+        <Empty icon="🏆" text="لا يوجد لاعبون في الترتيب بعد · No players ranked yet" />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
           {rows.map((r) => {

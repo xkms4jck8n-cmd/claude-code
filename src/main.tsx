@@ -1,12 +1,10 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import Kingdom from "./BrainKingdom";
+import OnlineOverlay from "./online/OnlineApp";
+import { OnlineProvider } from "./online/useOnline";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { initNotifications } from "./notifications";
-
-// Lazy-load the online layer so supabase-js + the multiplayer UI are split into
-// their own chunk and never block the game's first paint.
-const OnlineApp = React.lazy(() => import("./online/OnlineApp"));
 
 const container = document.getElementById("root");
 if (!container) {
@@ -15,16 +13,18 @@ if (!container) {
 
 createRoot(container).render(
   <React.StrictMode>
-    {/* Game and online layer are isolated: a crash in one cannot take down the
-        other, and neither can white-screen the app. */}
-    <ErrorBoundary name="game">
-      <Kingdom />
-    </ErrorBoundary>
-    <ErrorBoundary name="online" fallback={false}>
-      <React.Suspense fallback={null}>
-        <OnlineApp />
-      </React.Suspense>
-    </ErrorBoundary>
+    {/* One OnlineProvider wraps everything so the game's own Profile / Leaderboard
+        / Friends screens AND the online overlay share a single real session and
+        live data. Game and online layer are isolated by error boundaries: a crash
+        in one cannot white-screen the other. */}
+    <OnlineProvider>
+      <ErrorBoundary name="game">
+        <Kingdom />
+      </ErrorBoundary>
+      <ErrorBoundary name="online" fallback={false}>
+        <OnlineOverlay />
+      </ErrorBoundary>
+    </OnlineProvider>
   </React.StrictMode>
 );
 

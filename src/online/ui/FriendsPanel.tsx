@@ -5,8 +5,8 @@ import { useOnline } from "../useOnline";
 import { T, card } from "./theme";
 import { Avatar, Btn, Empty, Pill, Spinner, fmtAcc } from "./parts";
 
-export function FriendsPanel({ onInvite }: { onInvite: (friend: Profile) => void }) {
-  const { me } = useOnline();
+export function FriendsPanel({ onInvite }: { onInvite?: (friend: Profile) => void }) {
+  const { me, status, configured, error, retry } = useOnline();
   const [friends, setFriends] = useState<FriendView[]>([]);
   const [requests, setRequests] = useState<api.RequestView[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,9 +43,17 @@ export function FriendsPanel({ onInvite }: { onInvite: (friend: Profile) => void
     setCompare({ f, h2h });
   };
 
+  if (!configured) return <Empty icon="🔌" text="نظام الأصدقاء يتطلب تفعيل الخدمة الأونلاين (راجع ONLINE_SETUP.md)" />;
+  if (status === "error") return (
+    <div style={{ textAlign: "center", padding: 24 }}>
+      <Empty icon="⚠️" text="تعذّر الاتصال بالخادم" />
+      <div style={{ fontSize: 11.5, color: T.red, direction: "ltr", margin: "8px 0 14px" }}>{error}</div>
+      <Btn onClick={retry}>إعادة المحاولة</Btn>
+    </div>
+  );
   if (!me) return <Spinner label="جارٍ التحميل…" />;
   if (compare) return <Compare me={me} f={compare.f} h2h={compare.h2h} onBack={() => setCompare(null)}
-    onInvite={() => { setCompare(null); onInvite(compare.f); }} />;
+    onInvite={onInvite ? () => { setCompare(null); onInvite(compare.f); } : undefined} />;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -62,7 +70,7 @@ export function FriendsPanel({ onInvite }: { onInvite: (friend: Profile) => void
       <div style={{ ...card, padding: 14 }}>
         <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 8 }}>إضافة صديق بالمعرّف</div>
         <div style={{ display: "flex", gap: 8 }}>
-          <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="KOK-XXXXXX"
+          <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="MK-1234567"
             style={{ flex: 1, padding: "10px 12px", borderRadius: 12, background: T.bg0, border: `1px solid ${T.line}`, color: T.ink, fontFamily: "inherit", fontSize: 14, textAlign: "center", letterSpacing: ".05em" }} />
           <Btn onClick={add} disabled={!code.trim()}>إضافة</Btn>
         </div>
@@ -94,7 +102,7 @@ export function FriendsPanel({ onInvite }: { onInvite: (friend: Profile) => void
             {friends.map((f) => (
               <Row key={f.profile.id} p={f.profile} online={f.online}>
                 <Btn kind="ghost" onClick={() => openCompare(f.profile)} style={{ padding: "7px 10px", fontSize: 12.5 }}>مقارنة</Btn>
-                <Btn onClick={() => onInvite(f.profile)} style={{ padding: "7px 10px", fontSize: 12.5 }}>تحدٍّ</Btn>
+                {onInvite && <Btn onClick={() => onInvite(f.profile)} style={{ padding: "7px 10px", fontSize: 12.5 }}>تحدٍّ</Btn>}
               </Row>
             ))}
           </div>
@@ -126,7 +134,7 @@ function Row({ p, online, children }: { p: Profile; online?: boolean; children?:
   );
 }
 
-function Compare({ me, f, h2h, onBack, onInvite }: { me: Profile; f: Profile; h2h: HeadToHead; onBack: () => void; onInvite: () => void }) {
+function Compare({ me, f, h2h, onBack, onInvite }: { me: Profile; f: Profile; h2h: HeadToHead; onBack: () => void; onInvite?: () => void }) {
   const acc = (p: Profile) => p.total_answers > 0 ? p.correct_answers / p.total_answers : 0;
   const rows: [string, string, string][] = [
     ["النقاط", String(me.total_score), String(f.total_score)],
@@ -163,7 +171,7 @@ function Compare({ me, f, h2h, onBack, onInvite }: { me: Profile; f: Profile; h2
           ))}
         </div>
       </div>
-      <Btn onClick={onInvite}>ادعُه إلى مبارزة ⚔️</Btn>
+      {onInvite && <Btn onClick={onInvite}>ادعُه إلى مبارزة ⚔️</Btn>}
     </div>
   );
 }

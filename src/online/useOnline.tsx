@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { isOnlineConfigured } from "./config";
 import { getClient } from "./client";
+import { getLocalFriendId, setLocalFriendId } from "./friendId";
 import * as api from "./api";
 import type { Profile } from "./types";
 
@@ -57,8 +58,11 @@ export function OnlineProvider({ children }: { children: React.ReactNode }) {
         await api.ensureSession();
         await api.syncServerClock();
         const seed = seedFromGame();
-        const prof = await api.ensureProfile(seed.name, seed.icon, seed.color);
+        // Propose the device's Friend ID (MK-#######) as the account code; the
+        // server keeps it if free, else issues one — sync back either way.
+        const prof = await api.ensureProfile(seed.name, seed.icon, seed.color, getLocalFriendId());
         if (cancelled) return;
+        setLocalFriendId(prof.player_code);
         setMe(prof);
         setStatus("ready");
 
