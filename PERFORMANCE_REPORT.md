@@ -1,5 +1,23 @@
 # PERFORMANCE REPORT — Kingdom of Knowledge
 
+## Polish-pass update (2026-06-15)
+
+| Area | Action / finding |
+|------|------------------|
+| **Reduce-motion** | `prefers-reduced-motion` now honored app-wide (`polish.css`) — disables 46 decorative keyframe animations + transitions when the OS setting is on, a real CPU/GPU win on older iPhones (and an App Store accessibility requirement). The game also has its own in-app motion switch. |
+| **Layout stability (CLS)** | `tabular-nums` on score/timer/combo counters prevents reflow jitter as digits change. |
+| **Scrolling** | Native momentum + contained overscroll on all scroll surfaces (no rubber-band repaint past list edges). |
+| **Re-renders** | Game uses `useMemo`/`useCallback` (×15) and stable list `key`s (165 explicit across 196 maps). Online components keep state local and drive targeted refetches from realtime, not global re-renders. |
+| **Bundle** | Main `index-*.js` ≈ 2.0 MB (≈ 600 KB gzip): ~980 KB is the inline 5,401-question bank, ~280 KB the base64-embedded Arabic fonts (deliberate — guarantees offline Arabic, zero font fetch), the rest game + supabase. Loaded once from the local bundle (no network), so transfer size is not a runtime cost; parse cost is one-time at launch. |
+| **Animations** | All GPU-friendly CSS transforms/opacity; no layout-thrashing JS animation loops. |
+
+**60 FPS:** the rendering model (CSS transforms, memoized components, no
+per-frame JS layout) is consistent with 60 FPS on modern iPhones. Confirming a
+*stable* 60 FPS under gameplay requires the Xcode/Instruments profiler on a device
+— not runnable in this Linux environment.
+
+---
+
 > **Update (Friend-ID / leaderboard integration):** the online layer was later
 > wired directly into the game's own Profile / Leaderboard / Friends screens, so
 > it can no longer be a separate lazy chunk (the game imports it eagerly). The

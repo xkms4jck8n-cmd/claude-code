@@ -1,5 +1,6 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
+import "./polish.css";
 import Kingdom from "./BrainKingdom";
 import OnlineOverlay from "./online/OnlineApp";
 import { OnlineProvider } from "./online/useOnline";
