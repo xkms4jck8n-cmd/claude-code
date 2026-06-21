@@ -1,0 +1,84 @@
+/* =============================================================================
+ * polish.css — additive, global premium-polish layer (App Store quality pass)
+ * -----------------------------------------------------------------------------
+ * Loaded once via main.tsx. Intentionally ADDITIVE: it only sets properties the
+ * game's inline styles don't, plus accessibility/feel improvements that apply
+ * app-wide (every screen, no per-screen rewrite). Nothing here overrides the
+ * game's existing layout, colors, or animations.
+ * ========================================================================== */
+
+:root {
+  /* iOS renders native controls, scrollbars and form fields to match the app's
+     dark theme instead of flashing light chrome. */
+  color-scheme: dark;
+}
+
+html {
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  /* Crisper Arabic + Latin: enable kerning, standard + contextual ligatures
+     (important for connected Arabic script) and proportional figures. */
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+  font-kerning: normal;
+  /* Premium feel: no rubber-band white flash past the app's own scroll areas. */
+  overscroll-behavior: none;
+}
+
+/* Native momentum scrolling for every scrollable surface in the game. */
+.k-scroll,
+.k-screen,
+[class*="k-"] {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Game-like feel: UI chrome (buttons, headings, labels) isn't text-selectable,
+   while inputs and the question/answer content remain fully selectable. */
+button,
+h1, h2, h3, h4 {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+input,
+textarea,
+[contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Tabular, aligned digits for scores / timers / counters (no jitter as numbers
+   change) — applied to the game's number-display utility classes. */
+.k-delta,
+.k-combo,
+.k-letter {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Accessible keyboard / switch-control focus ring (only when navigating via
+   keyboard, never on touch — so it doesn't disturb the visual design). */
+:focus-visible {
+  outline: 2px solid rgba(246, 221, 154, 0.85);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Respect the OS "Reduce Motion" setting — required for App Store accessibility
+   and a real performance win on older devices (kills decorative animation work
+   without changing layout). The game also has its own in-app motion switch. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,19 @@
+diff --git a/node_modules/@capacitor/local-notifications/ios/Sources/LocalNotificationsPlugin/LocalNotificationsHandler.swift b/node_modules/@capacitor/local-notifications/ios/Sources/LocalNotificationsPlugin/LocalNotificationsHandler.swift
+index e0bf257..304a9e7 100644
+--- a/node_modules/@capacitor/local-notifications/ios/Sources/LocalNotificationsPlugin/LocalNotificationsHandler.swift
++++ b/node_modules/@capacitor/local-notifications/ios/Sources/LocalNotificationsPlugin/LocalNotificationsHandler.swift
+@@ -35,10 +35,13 @@ public class LocalNotificationsHandler: NSObject, NotificationHandlerProtocol {
+             }
+         }
+ 
++        // iOS 14+ replaced the deprecated `.alert` presentation option with the
++        // more granular `.banner` (heads-up) + `.list` (Notification Center).
+         return [
+             .badge,
+             .sound,
+-            .alert
++            .banner,
++            .list
+         ]
+     }
+ 
